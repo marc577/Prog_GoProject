@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,9 +15,12 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	var webPort int = 8443
+	webPort := flag.Int("port",443,"https Webserver Port")
+
+	flag.Parse()
+
 	http.HandleFunc("/hello", HelloServer)
-	err := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(webPort)), "keys/server.crt", "keys/server.key", nil)
+	err := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "keys/server.crt", "keys/server.key", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
