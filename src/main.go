@@ -1,63 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"crypto/tls"
-	"net"
-	"bufio"
+	"net/http"
 	"strconv"
 	"strings"
 )
-
-func main() {
-	var webPort int = 443
-	log.SetFlags(log.Lshortfile)
-
-	cer, err := tls.LoadX509KeyPair("keys/server.crt", "keys/server.key")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	fmt.Println("Keys loaded!")
-
-	config := &tls.Config{Certificates: []tls.Certificate{cer}}
-	ln, err := tls.Listen("tcp", joinStr(":", strconv.Itoa(webPort)), config)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	fmt.Println(joinStr("Allocated Port ",strconv.Itoa(webPort)))
-	defer ln.Close()
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		go handleConnection(conn)
-	}
+func HelloServer(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("This is an example server.\n"))
+	// fmt.Fprintf(w, "This is an example server.\n")
+	// io.WriteString(w, "This is an example server.\n")
 }
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	fmt.Println("New Connection")
-	r := bufio.NewReader(conn)
-	for {
-		msg, err := r.ReadString('\n')
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		println(msg)
-
-		n, err := conn.Write([]byte("world\n"))
-		if err != nil {
-			log.Println(n, err)
-			return
-		}
+func main() {
+	var webPort int = 8443
+	http.HandleFunc("/hello", HelloServer)
+	err := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(webPort)), "keys/server.crt", "keys/server.key", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
