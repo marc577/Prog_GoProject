@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -15,14 +16,24 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+
+	f, fileErr := os.OpenFile("log/main.go.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if fileErr != nil {
+		log.Println(fileErr)
+	}
+	defer f.Close()
+
+	logger := log.New(f, "Main.go ", log.LstdFlags)
 	webPort := flag.Int("port",443,"https Webserver Port")
 
 	flag.Parse()
-
+	logger.Println(joinStr("Flags parsed: Port:", strconv.Itoa(*webPort)))
 	http.HandleFunc("/hello", HelloServer)
-	err := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "keys/server.crt", "keys/server.key", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "keys/server.crt", "keys/server.key", nil)
+	if httpErr != nil {
+		logger.Println("Fatal error")
+		log.Fatal("ListenAndServe: ", httpErr)
 	}
 }
 
