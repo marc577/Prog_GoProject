@@ -31,7 +31,7 @@ func main() {
 	webPort := flag.Int("port",443,"https Webserver Port")
 
 	flag.Parse()
-	logger.Println(joinStr("Flags parsed: Port:", strconv.Itoa(*webPort)))
+	logger.Println(joinStr("\nFlags parsed: Port:", strconv.Itoa(*webPort)))
 
 	//http Route Handles
 	http.HandleFunc("/hello", HelloServer)
