@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 )
+
 func HelloServer(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("This is an example server.\n"))
@@ -29,6 +30,8 @@ func main() {
 
 	flag.Parse()
 	logger.Println(joinStr("Flags parsed: Port:", strconv.Itoa(*webPort)))
+
+	//http Route Handles
 	http.HandleFunc("/hello", HelloServer)
 	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "keys/server.crt", "keys/server.key", nil)
 	if httpErr != nil {
