@@ -5,15 +5,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 )
 
-func HelloServer(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("This is an example server.\n"))
-	// fmt.Fprintf(w, "This is an example server.\n")
-	// io.WriteString(w, "This is an example server.\n")
+func init(){
+	// Verbose logging with file name and line number
+	log.SetFlags(log.Lshortfile)
+
+	// Use all CPU cores
+	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 func main() {
@@ -38,6 +40,13 @@ func main() {
 		logger.Println("Fatal error")
 		log.Fatal("ListenAndServe: ", httpErr)
 	}
+}
+
+func HelloServer(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("This is an example server.\n"))
+	// fmt.Fprintf(w, "This is an example server.\n")
+	// io.WriteString(w, "This is an example server.\n")
 }
 
 func joinStr(strs ...string) string {
