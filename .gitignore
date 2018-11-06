@@ -17,3 +17,6 @@
 
 # ignore log files
 log/*
+
+# ignore vscode debug
+src/debug

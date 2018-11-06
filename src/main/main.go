@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func init(){
+func init() {
 	// Verbose logging with file name and line number
 	log.SetFlags(log.Lshortfile)
 
@@ -20,7 +20,7 @@ func init(){
 
 func main() {
 
-	f, fileErr := os.OpenFile("log/main.go.log",
+	f, fileErr := os.OpenFile("../../log/main.go.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if fileErr != nil {
 		log.Println(fileErr)
@@ -28,14 +28,14 @@ func main() {
 	defer f.Close()
 
 	logger := log.New(f, "Main.go ", log.LstdFlags)
-	webPort := flag.Int("port",443,"https Webserver Port")
+	webPort := flag.Int("port", 8443, "https Webserver Port")
 
 	flag.Parse()
-	logger.Println(joinStr("\nFlags parsed: Port:", strconv.Itoa(*webPort)))
+	logger.Println(joinStr("\n Flags parsed: Port:", strconv.Itoa(*webPort)))
 
 	//http Route Handles
 	http.HandleFunc("/hello", HelloServer)
-	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "keys/server.crt", "keys/server.key", nil)
+	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "../../keys/server.crt", "../../keys/server.key", nil)
 	if httpErr != nil {
 		logger.Println("Fatal error")
 		log.Fatal("ListenAndServe: ", httpErr)
