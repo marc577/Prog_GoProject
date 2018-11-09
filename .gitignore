@@ -20,3 +20,4 @@ log/*
 
 # ignore vscode debug
 src/debug
+src/main/debug
