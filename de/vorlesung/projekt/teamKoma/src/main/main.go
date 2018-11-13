@@ -2,12 +2,15 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/alecthomas/template"
 )
 
 func init() {
@@ -34,7 +37,8 @@ func main() {
 	logger.Println(joinStr("\n Flags parsed: Port:", strconv.Itoa(*webPort)))
 
 	//http Route Handles
-	http.HandleFunc("/hello", HelloServer)
+	http.HandleFunc("/", serveIndex)
+	http.HandleFunc("/login", serveLogin)
 	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "../../keys/server.crt", "../../keys/server.key", nil)
 	if httpErr != nil {
 		logger.Println("Fatal error")
@@ -42,11 +46,24 @@ func main() {
 	}
 }
 
-func HelloServer(w http.ResponseWriter, req *http.Request) {
+func serveIndex(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("This is an example server.\n"))
 	// fmt.Fprintf(w, "This is an example server.\n")
 	// io.WriteString(w, "This is an example server.\n")
+}
+
+func serveLogin(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("method:", req.Method) //get request method
+	if req.Method == "GET" {
+		t, _ := template.ParseFiles("../../html/login.html")
+		t.Execute(w, nil)
+	} else {
+		req.ParseForm()
+		// logic part of log in
+		fmt.Println("username:", req.Form["username"])
+		fmt.Println("password:", req.Form["password"])
+	}
 }
 
 func joinStr(strs ...string) string {
