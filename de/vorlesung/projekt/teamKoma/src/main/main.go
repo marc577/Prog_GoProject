@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"logging"
 	"runtime"
 	"strconv"
@@ -31,10 +30,10 @@ func main() {
 	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *tlsCrt}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
 
-	logging.ShutdownLogging()
-
 	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey)
 	if wsErr != nil {
-		log.Fatalf("WebServer Error", wsErr)
+		logging.Error.Fatal("WebServer Error", wsErr)
 	}
+	logging.ShutdownLogging()
+
 }
