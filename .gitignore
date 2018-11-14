@@ -16,12 +16,20 @@
 .vscode
 
 # ignore log files
-log/*
+de/vorlesung/projekt/teamKoma/log/*
 
 # ignore vscode debug
+<<<<<<< HEAD
 src/debug
 src/main/debug
 de/vorlesung/projekt/teamKoma/src/main/debug
 *.a
 *.log
 *.log
+=======
+de/vorlesung/projekt/teamKoma/src/debug
+de/vorlesung/projekt/teamKoma/src/main/debug
+*.log
+de/vorlesung/projekt/teamKoma/log/main.go.log
+de/vorlesung/projekt/teamKoma/pkg/windows_amd64/logging.a
+>>>>>>> 7dd6706273777bd87578ae042f751b9c81537fd5

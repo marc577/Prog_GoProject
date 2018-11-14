@@ -3,19 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"html/template"
+	"logging"
 	"net/http"
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/alecthomas/template"
 )
 
 func init() {
-	// Verbose logging with file name and line number
-	log.SetFlags(log.Lshortfile)
 
 	// Use all CPU cores
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -23,26 +19,28 @@ func init() {
 
 func main() {
 
-	f, fileErr := os.OpenFile("../../log/main.go.log",
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if fileErr != nil {
-		log.Println(fileErr)
-	}
-	defer f.Close()
-
-	logger := log.New(f, "Main.go ", log.LstdFlags)
-	webPort := flag.Int("port", 8443, "https Webserver Port")
+	logLoc := flag.String("logLoc", "../../log", "Logfile Location")
+	storeLoc := flag.String("storeLoc", "../../storage", "Ticketsystem Storage Path")
+	WebPort := flag.Int("port", 8443, "https Webserver Port")
+	TLSCrt := flag.String("crt", "../../keys/server.crt", "https Webserver Certificate")
+	TLSKey := flag.String("key", "../../keys/server.key", "https Webserver Keyfile")
 
 	flag.Parse()
-	logger.Println(joinStr("\n Flags parsed: Port:", strconv.Itoa(*webPort)))
+	logging.LogInit(*logLoc)
+	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", *logLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: StoreLoc:", *storeLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*WebPort)}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *TLSCrt}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *TLSKey}, ""))
+
+	logging.ShutdownLogging()
 
 	//http Route Handles
 	http.HandleFunc("/", serveIndex)
 	http.HandleFunc("/login", serveLogin)
-	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "../../keys/server.crt", "../../keys/server.key", nil)
+	httpErr := http.ListenAndServeTLS(strings.Join([]string{":", strconv.Itoa(*WebPort)}, ""), *TLSCrt, *TLSKey, nil)
 	if httpErr != nil {
-		logger.Println("Fatal error")
-		log.Fatal("ListenAndServe: ", httpErr)
+		logging.Error.Fatal("ListenAndServe: ", httpErr)
 	}
 }
 
@@ -64,12 +62,4 @@ func serveLogin(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("username:", req.Form["username"])
 		fmt.Println("password:", req.Form["password"])
 	}
-}
-
-func joinStr(strs ...string) string {
-	var sb strings.Builder
-	for _, str := range strs {
-		sb.WriteString(str)
-	}
-	return sb.String()
 }
