@@ -62,13 +62,17 @@ func LogInit(logLoc string) {
 	Error.Println("NEW ERROR LOG")
 }
 
-func createDirIfNotExist(dir string) {
+func createDirIfNotExist(dir string) (success bool) {
+	success = true
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
+			success = false
 			Error.Panic("Could not create LogFolder: ", err)
+			return success
 		}
 	}
+	return success
 }
 
 func createLogfileIfNotExist(file string) (logFile *os.File) {
@@ -82,11 +86,15 @@ func createLogfileIfNotExist(file string) (logFile *os.File) {
 	return logFile
 }
 
-func closeLogFile(file *os.File) {
+func closeLogFile(file *os.File) (success bool) {
+	success = true
 	err := file.Close()
 	if err != nil {
+		success = false
 		Error.Println("Could not close file:", err)
+		return success
 	}
+	return success
 }
 
 func ShutdownLogging() {
