@@ -19,7 +19,8 @@ func init() {
 
 func main() {
 
-	logLoc := flag.String("logLoc", "../../log", "Logfile Localtion")
+	logLoc := flag.String("logLoc", "../../log", "Logfile Location")
+	storeLoc := flag.String("storeLoc", "../../storage", "Ticketsystem Storage Path")
 	WebPort := flag.Int("port", 8443, "https Webserver Port")
 	TLSCrt := flag.String("crt", "../../keys/server.crt", "https Webserver Certificate")
 	TLSKey := flag.String("key", "../../keys/server.key", "https Webserver Keyfile")
@@ -27,6 +28,7 @@ func main() {
 	flag.Parse()
 	logging.LogInit(*logLoc)
 	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", *logLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: StoreLoc:", *storeLoc}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*WebPort)}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *TLSCrt}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *TLSKey}, ""))
