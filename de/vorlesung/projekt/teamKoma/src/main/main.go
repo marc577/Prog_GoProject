@@ -14,7 +14,7 @@ import (
 
 func init() {
 	// Verbose logging with file name and line number
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	// Use all CPU cores
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -22,25 +22,24 @@ func init() {
 
 func main() {
 
-	f, fileErr := os.OpenFile("../../log/main.go.log",
+	logFile, fileErr := os.OpenFile("../../log/main.go.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if fileErr != nil {
 		log.Println(fileErr)
 	}
-	defer f.Close()
+	defer logFile.Close()
+	log.SetOutput(logFile)
 
-	logger := log.New(f, "Main.go ", log.LstdFlags)
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 
 	flag.Parse()
-	logger.Println(joinStr("\n Flags parsed: Port:", strconv.Itoa(*webPort)))
+	log.Println(joinStr("\n Flags parsed: Port:", strconv.Itoa(*webPort)))
 
 	//http Route Handles
 	http.HandleFunc("/", serveIndex)
 	http.HandleFunc("/login", serveLogin)
 	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "../../keys/server.crt", "../../keys/server.key", nil)
 	if httpErr != nil {
-		logger.Println("Fatal error")
 		log.Fatal("ListenAndServe: ", httpErr)
 	}
 }
