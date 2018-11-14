@@ -98,12 +98,12 @@ func closeLogFile(file *os.File) (success bool) {
 }
 
 func ShutdownLogging() {
-	Trace.Println("Gracefully shutting down TraceLog\n")
+	Trace.Println("Gracefully shutting down TraceLog")
 	closeLogFile(traceFile)
-	Info.Println("Gracefully shutting down InfoLog\n")
+	Info.Println("Gracefully shutting down InfoLog")
 	closeLogFile(infoFile)
-	Warning.Println("Gracefully shutting down WarningLog\n")
+	Warning.Println("Gracefully shutting down WarningLog")
 	closeLogFile(warningFile)
-	Error.Println("Gracefully shutting down ErrorLog\n")
+	Error.Println("Gracefully shutting down ErrorLog")
 	closeLogFile(errorFile)
 }
