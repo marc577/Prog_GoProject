@@ -3,14 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/alecthomas/template"
 )
 
 func init() {
