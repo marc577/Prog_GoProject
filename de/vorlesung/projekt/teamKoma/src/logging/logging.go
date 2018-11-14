@@ -15,7 +15,7 @@ var (
 	Error   *log.Logger
 )
 
-func Init(
+func initQueues(
 	traceHandle io.Writer,
 	infoHandle io.Writer,
 	warningHandle io.Writer,
@@ -39,7 +39,7 @@ func Init(
 }
 
 func LogInit() {
-	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	initQueues(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	createDirIfNotExist("../../log")
 
@@ -49,10 +49,10 @@ func LogInit() {
 	Warning.SetOutput(createLogfileIfNotExist("warning"))
 	Error.SetOutput(createLogfileIfNotExist("error"))
 
-	Trace.Println("I have something standard to say")
-	Info.Println("Special Information")
-	Warning.Println("There is something you need to know about")
-	Error.Println("Something has failed")
+	Trace.Println("NEW TRACE LOG")
+	Info.Println("NEW INFO LOG")
+	Warning.Println("NEW WARNINGS LOG")
+	Error.Println("NEW ERROR LOG")
 }
 
 func createDirIfNotExist(dir string) {

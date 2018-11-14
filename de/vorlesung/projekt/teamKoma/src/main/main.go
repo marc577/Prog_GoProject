@@ -18,7 +18,6 @@ func init() {
 }
 
 func main() {
-
 	logging.LogInit()
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 
