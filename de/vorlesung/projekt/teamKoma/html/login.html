@@ -1,12 +1,30 @@
-<html>
-    <head>
-    <title></title>
-    </head>
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <body>
+        <div class="container">
         <form action="/login" method="post">
-            Username:<input type="text" name="username">
-            Password:<input type="password" name="password">
-            <input type="submit" value="Login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" aria-describedby="emailHelp" placeholder="Enter username" name="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Password" name="password">
+            </div>
+            <input type="submit" class="btn btn-primary btn-sm" value="Login">
         </form>
-    </body>
+        </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="assets/js/jquery-3.3.1.slim.min.js"></script>
+    <script src="assets/js/popper.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+  </body>
 </html>
