@@ -22,3 +22,4 @@ de/vorlesung/projekt/teamKoma/log/*
 de/vorlesung/projekt/teamKoma/src/debug
 de/vorlesung/projekt/teamKoma/src/main/debug
 *.log
+de/vorlesung/projekt/teamKoma/log/main.go.log
