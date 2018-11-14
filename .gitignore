@@ -21,3 +21,4 @@ de/vorlesung/projekt/teamKoma/log/*
 # ignore vscode debug
 de/vorlesung/projekt/teamKoma/src/debug
 de/vorlesung/projekt/teamKoma/src/main/debug
+*.log
