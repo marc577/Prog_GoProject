@@ -13,8 +13,14 @@ import (
 )
 
 func init() {
-	// Verbose logging with file name and line number
+	// Verbose logging with date, time, file name and line number
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	// Use all CPU cores
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
+
+func main() {
 
 	logFile, fileErr := os.OpenFile("../../log/main.go.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -23,12 +29,6 @@ func init() {
 	}
 	defer logFile.Close()
 	log.SetOutput(logFile)
-
-	// Use all CPU cores
-	runtime.GOMAXPROCS(runtime.NumCPU())
-}
-
-func main() {
 
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 
