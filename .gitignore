@@ -16,8 +16,8 @@
 .vscode
 
 # ignore log files
-log/*
+de/vorlesung/projekt/teamKoma/log/*
 
 # ignore vscode debug
-src/debug
-src/main/debug
+de/vorlesung/projekt/teamKoma/src/debug
+de/vorlesung/projekt/teamKoma/src/main/debug
