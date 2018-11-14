@@ -18,16 +18,25 @@ func init() {
 }
 
 func main() {
-	logging.LogInit()
-	webPort := flag.Int("port", 8443, "https Webserver Port")
+
+	logLoc := flag.String("logLoc", "../../log", "Logfile Localtion")
+	WebPort := flag.Int("port", 8443, "https Webserver Port")
+	TLSCrt := flag.String("crt", "../../keys/server.crt", "https Webserver Certificate")
+	TLSKey := flag.String("key", "../../keys/server.key", "https Webserver Keyfile")
 
 	flag.Parse()
-	logging.Info.Println(joinStr("Flags parsed: Port:", strconv.Itoa(*webPort)))
+	logging.LogInit(*logLoc)
+	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", *logLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*WebPort)}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *TLSCrt}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *TLSKey}, ""))
+
+	logging.ShutdownLogging()
 
 	//http Route Handles
 	http.HandleFunc("/", serveIndex)
 	http.HandleFunc("/login", serveLogin)
-	httpErr := http.ListenAndServeTLS(joinStr(":", strconv.Itoa(*webPort)), "../../keys/server.crt", "../../keys/server.key", nil)
+	httpErr := http.ListenAndServeTLS(strings.Join([]string{":", strconv.Itoa(*WebPort)}, ""), *TLSCrt, *TLSKey, nil)
 	if httpErr != nil {
 		logging.Error.Fatal("ListenAndServe: ", httpErr)
 	}
@@ -51,12 +60,4 @@ func serveLogin(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("username:", req.Form["username"])
 		fmt.Println("password:", req.Form["password"])
 	}
-}
-
-func joinStr(strs ...string) string {
-	var sb strings.Builder
-	for _, str := range strs {
-		sb.WriteString(str)
-	}
-	return sb.String()
 }

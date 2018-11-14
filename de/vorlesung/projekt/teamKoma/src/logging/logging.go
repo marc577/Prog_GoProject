@@ -9,10 +9,14 @@ import (
 )
 
 var (
-	Trace   *log.Logger
-	Info    *log.Logger
-	Warning *log.Logger
-	Error   *log.Logger
+	Trace       *log.Logger
+	Info        *log.Logger
+	Warning     *log.Logger
+	Error       *log.Logger
+	traceFile   *os.File
+	infoFile    *os.File
+	warningFile *os.File
+	errorFile   *os.File
 )
 
 func initQueues(
@@ -38,16 +42,19 @@ func initQueues(
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func LogInit() {
+func LogInit(logLoc string) {
 	initQueues(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
-	createDirIfNotExist("../../log")
+	createDirIfNotExist(logLoc)
 
-	Trace.SetOutput(createLogfileIfNotExist("trace"))
-	infoFile := createLogfileIfNotExist("info")
+	traceFile = createLogfileIfNotExist("trace")
+	Trace.SetOutput(traceFile)
+	infoFile = createLogfileIfNotExist("info")
 	Info.SetOutput(infoFile)
-	Warning.SetOutput(createLogfileIfNotExist("warning"))
-	Error.SetOutput(createLogfileIfNotExist("error"))
+	warningFile = createLogfileIfNotExist("warning")
+	Warning.SetOutput(warningFile)
+	errorFile = createLogfileIfNotExist("error")
+	Error.SetOutput(errorFile)
 
 	Trace.Println("NEW TRACE LOG")
 	Info.Println("NEW INFO LOG")
@@ -59,27 +66,36 @@ func createDirIfNotExist(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
-			panic(err)
+			Error.Panic("Could not create LogFolder: ", err)
 		}
 	}
 }
 
 func createLogfileIfNotExist(file string) (logFile *os.File) {
 
-	logFile, fileErr := os.OpenFile(joinStr("../../log/", file, ".log"),
+	logFile, fileErr := os.OpenFile(strings.Join([]string{"../../log/", file, ".log"}, ""),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if fileErr != nil {
-		Error.Println(fileErr)
+		Error.Fatal("Could not create LogFile:", fileErr)
 	}
-	//defer logFile.Close()
 
 	return logFile
 }
 
-func joinStr(strs ...string) string {
-	var sb strings.Builder
-	for _, str := range strs {
-		sb.WriteString(str)
+func closeLogFile(file *os.File) {
+	err := file.Close()
+	if err != nil {
+		Error.Println("Could not close file:", err)
 	}
-	return sb.String()
+}
+
+func ShutdownLogging() {
+	Trace.Println("Gracefully shutting down TraceLog\n")
+	closeLogFile(traceFile)
+	Info.Println("Gracefully shutting down InfoLog\n")
+	closeLogFile(infoFile)
+	Warning.Println("Gracefully shutting down WarningLog\n")
+	closeLogFile(warningFile)
+	Error.Println("Gracefully shutting down ErrorLog\n")
+	closeLogFile(errorFile)
 }
