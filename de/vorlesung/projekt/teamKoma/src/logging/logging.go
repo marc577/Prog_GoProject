@@ -9,9 +9,13 @@ import (
 )
 
 var (
-	Trace       *log.Logger
-	Info        *log.Logger
-	Warning     *log.Logger
+	//Trace Logging Query for Tracelog
+	Trace *log.Logger
+	//Info Logging Query for Infolog
+	Info *log.Logger
+	//Warning Logging Query for Warninglog
+	Warning *log.Logger
+	//Error Logging Query for Errorlog
 	Error       *log.Logger
 	traceFile   *os.File
 	infoFile    *os.File
@@ -27,6 +31,10 @@ func initQueues(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Wr
 	return true
 }
 
+//LogInit Initializes Parallel Logging in 4 different Queues
+//Makes it easier to trace Issues
+//needs a Logfolder Location
+//Returns true if Logging started successfully
 func LogInit(logLoc string) bool {
 	initQueues(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
@@ -109,6 +117,8 @@ func closeLogFile(file *os.File) (success bool) {
 	return success
 }
 
+//ShutdownLogging gracefully shuts down all Queues, if they were established correctly
+//Return true if shutting down was successfull
 func ShutdownLogging() bool {
 	if traceFile != nil && infoFile != nil && warningFile != nil && errorFile != nil {
 		Trace.Println("Gracefully shutting down TraceLog")
