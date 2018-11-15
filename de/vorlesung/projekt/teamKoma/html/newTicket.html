@@ -1,0 +1,52 @@
+{{define "content"}}
+<form action="/submitNew" method="post">
+        <div class="row">
+          <div class="col">
+          </div>
+          <div class="col-6">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="">First and last name</span>
+              </div>
+              <input type="text" class="form-control" required>
+              <input type="text" class="form-control" required>
+            </div>
+          </div>
+          <div class="col">
+          </div>
+        </div>
+        <br>
+        <div class="row">
+          <div class="col">
+          </div>
+          <div class="col-6">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="inputGroup-sizing-default">E-Mail</span>
+              </div>
+              <input type="email" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default" required>
+            </div>
+          </div>
+          <div class="col">
+          </div>
+        </div>
+        <br>
+        <div class="row">
+              <label for="subject">Subject</label>
+              <input type="text" class="form-control" id="subject" placeholder="Your Subject" required> 
+        </div>
+        <br>
+        <div class="row">
+                <label for="description">Description</label>
+                <textarea class="form-control" id="description" rows="15" required></textarea>
+        </div>
+        <br>
+        <div class= "row justify-content-center">
+          <div class="col"></div>
+          <div class="col-6 text-center">
+              <input type="submit" class="btn btn-primary btn-lg btn-block" value="Submit new Ticket">
+          </div>
+          <div class="col"></div>
+        </div>
+        </form>
+{{end}}
