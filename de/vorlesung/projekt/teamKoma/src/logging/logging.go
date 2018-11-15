@@ -37,28 +37,32 @@ func LogInit(logLoc string) bool {
 		Error.Fatal("Could not create Logfile", traceErr)
 		return false
 	}
-	Trace.SetOutput(traceFile)
+	traceWriter := io.MultiWriter(ioutil.Discard, traceFile)
+	Trace.SetOutput(traceWriter)
 
 	infoFile, infoErr := createLogfileIfNotExist(logLoc, "info")
 	if infoErr != nil {
 		Error.Fatal("Could not create Logfile", infoErr)
 		return false
 	}
-	Info.SetOutput(infoFile)
+	infoWriter := io.MultiWriter(os.Stdout, infoFile)
+	Info.SetOutput(infoWriter)
 
 	warningFile, warnErr := createLogfileIfNotExist(logLoc, "warning")
 	if warnErr != nil {
 		Error.Fatal("Could not create Logfile", warnErr)
 		return false
 	}
-	Warning.SetOutput(warningFile)
+	warningWriter := io.MultiWriter(os.Stdout, warningFile)
+	Warning.SetOutput(warningWriter)
 
 	errorFile, err := createLogfileIfNotExist(logLoc, "error")
 	if err != nil {
 		Error.Fatal("Could not create Logfile", err)
 		return false
 	}
-	Error.SetOutput(errorFile)
+	errorWriter := io.MultiWriter(os.Stderr, errorFile)
+	Error.SetOutput(errorWriter)
 
 	Trace.Println("NEW TRACE LOG")
 	Info.Println("NEW INFO LOG")
@@ -85,7 +89,7 @@ func createDirIfNotExist(dir string) (success bool) {
 
 func createLogfileIfNotExist(dir string, file string) (*os.File, error) {
 
-	logFile, fileErr := os.OpenFile(strings.Join([]string{dir, file, ".log"}, ""),
+	logFile, fileErr := os.OpenFile(strings.Join([]string{dir, "/", file, ".log"}, ""),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if fileErr != nil {
 		Error.Fatal("Could not create LogFile:", fileErr)
