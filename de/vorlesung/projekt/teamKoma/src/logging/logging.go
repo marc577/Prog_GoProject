@@ -118,7 +118,7 @@ func closeLogFile(file *os.File) (success bool) {
 }
 
 //ShutdownLogging gracefully shuts down all Queues, if they were established correctly
-//Return true if shutting down was successfull
+//Return true if shutting down was successful
 func ShutdownLogging() bool {
 	if traceFile != nil && infoFile != nil && warningFile != nil && errorFile != nil {
 		Trace.Println("Gracefully shutting down TraceLog")
