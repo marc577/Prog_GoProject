@@ -121,6 +121,7 @@ func ShutdownLogging() bool {
 		state = closeLogFile(errorFile)
 		return state
 	}
+	Error.Println("Logging was not initialized well")
 	return true
 
 }
