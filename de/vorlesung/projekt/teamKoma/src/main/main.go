@@ -21,6 +21,7 @@ func main() {
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 	tlsCrt := flag.String("crt", "../../keys/server.crt", "https Webserver Certificate")
 	tlsKey := flag.String("key", "../../keys/server.key", "https Webserver Keyfile")
+	htmlLoc := flag.String("htmlLoc", "../../html", "Path to html template folder")
 
 	flag.Parse()
 	logging.LogInit(*logLoc)
@@ -29,8 +30,9 @@ func main() {
 	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*webPort)}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *tlsCrt}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
 
-	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey)
+	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
 	if wsErr != nil {
 		logging.Error.Fatal("WebServer Error", wsErr)
 	}
