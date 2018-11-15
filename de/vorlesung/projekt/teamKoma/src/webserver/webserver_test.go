@@ -81,7 +81,7 @@ func TestMethodsNotAllow(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	go func() {
-		Start(8443, "../../keys/server.crt", "../../keys/server.key")
+		Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")
 	}()
 	assert.True(t, true)
 }

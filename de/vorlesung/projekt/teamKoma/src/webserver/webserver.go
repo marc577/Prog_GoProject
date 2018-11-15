@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,34 @@ func methods(methods ...string) adapter {
 		})
 	}
 }
+func logger() adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Println(r.RequestURI)
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+func MustParams() adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Println(r.RequestURI)
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
+// func basicAuthWrapper(authenticator Authenticator, handler http.HandlerFunc) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		user, pswd, ok := r.BasicAuth()
+// 		if ok && authenticator.Authenticate(user, pswd) {
+// 			handler(w, r)
+// 		} else {
+// 			w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
+// 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+// 		}
+// 	})
+// }
 
 // Adapts several http handlers
 // Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
@@ -81,13 +110,18 @@ func serveIndex(w http.ResponseWriter, req *http.Request) {
 // }
 
 func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
+
 	htmlRoot = rootPath
+
+	staticFilePath := strings.Join([]string{htmlRoot, "assets"}, "/")
+
 	//http Route Handles
-	http.HandleFunc("/", adapt(serveIndex, methods("GET")))
-	// http.HandleFunc("/login", serveLogin)
+	fs := http.FileServer(http.Dir(staticFilePath))
+	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
+
+	http.Handle("/", adapt(http.HandlerFunc(serveIndex), logger()))
 
 	portString := strings.Join([]string{":", strconv.Itoa(port)}, "")
-
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)
 
 	return httpErr

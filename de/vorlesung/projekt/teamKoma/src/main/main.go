@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"logging"
 	"runtime"
 	"strconv"
@@ -34,6 +35,7 @@ func main() {
 
 	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
 	if wsErr != nil {
+		log.Fatal("WebServer Error", wsErr)
 		logging.Error.Fatal("WebServer Error", wsErr)
 	}
 	logging.ShutdownLogging()
