@@ -7,6 +7,33 @@ import (
 	"strings"
 )
 
+type adapter func(http.HandlerFunc) http.HandlerFunc
+
+func methods(methods ...string) adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			method := r.Method
+			for _, me := range methods {
+				if me == method {
+					h.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, "Method Not Allowd", 405)
+			w.WriteHeader(405)
+		})
+	}
+}
+
+// Adapts several http handlers
+// Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
+func adapt(h http.HandlerFunc, adapters ...adapter) http.HandlerFunc {
+	for _, adapter := range adapters {
+		h = adapter(h)
+	}
+	return h
+}
+
 // Authenticator for user autehfication
 type Authenticator interface {
 	Authenticate(user, password string) bool
@@ -21,15 +48,12 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 	return af(user, password)
 }
 
-func serveIndex(w http.ResponseWriter, req *http.Request) {
-	if req.Method == "GET" {
-		t, _ := template.ParseFiles("../../html/index.html")
-		t.Execute(w, nil)
-	} else {
-		http.Error(w, "Method Not Allowed", 405)
-		w.WriteHeader(405)
-	}
+var htmlRoot string
 
+func serveIndex(w http.ResponseWriter, req *http.Request) {
+	tPath := strings.Join([]string{htmlRoot, "index.html"}, "/")
+	t, _ := template.ParseFiles(tPath)
+	t.Execute(w, nil)
 }
 
 // e.g. http.HandleFunc("/health-check", HealthCheckHandler)
@@ -56,10 +80,10 @@ func serveIndex(w http.ResponseWriter, req *http.Request) {
 // 	}
 // }
 
-func Start(port int, serverCertPath string, serverKeyPath string) error {
-
+func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
+	htmlRoot = rootPath
 	//http Route Handles
-	http.HandleFunc("/", serveIndex)
+	http.HandleFunc("/", adapt(serveIndex, methods("GET")))
 	// http.HandleFunc("/login", serveLogin)
 
 	portString := strings.Join([]string{":", strconv.Itoa(port)}, "")

@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,8 +12,11 @@ import (
 
 var server *httptest.Server
 
-func setup(handler http.HandlerFunc) {
-	server = httptest.NewServer(http.HandlerFunc(serveIndex))
+func setupFunc(handler http.HandlerFunc) {
+	server = httptest.NewServer(http.HandlerFunc(handler))
+}
+func setup(handler http.Handler) {
+	server = httptest.NewServer(handler)
 }
 func teardown() {
 	server.Close()
@@ -28,7 +32,7 @@ func teardown() {
 // }
 
 func TestServeIndexGET(t *testing.T) {
-	setup(serveIndex)
+	setupFunc(serveIndex)
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -39,7 +43,7 @@ func TestServeIndexGET(t *testing.T) {
 }
 
 func TestServeIndexPOST(t *testing.T) {
-	setup(serveIndex)
+	setupFunc(serveIndex)
 	defer teardown()
 	res, err := http.Post(server.URL, "", nil)
 	assert.NoError(t, err)
@@ -48,12 +52,36 @@ func TestServeIndexPOST(t *testing.T) {
 	assert.NoError(t, er)
 }
 
+func TestMethodsAllow(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		io.WriteString(w, "Hallo Welt")
+	})
+	setup(adapt(simpleHandler, methods("GET")))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hallo Welt", string(body))
+}
+func TestMethodsNotAllow(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		io.WriteString(w, "Hallo Welt")
+	})
+	setup(adapt(simpleHandler, methods("GET")))
+	defer teardown()
+	res, err := http.Post(server.URL, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Wrong HTTP Method")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "Hallo Welt", string(body))
+}
+
 func TestStart(t *testing.T) {
-	jobs := make(chan error)
 	go func() {
-		err := Start(8443, "../../keys/server.crt", "../../keys/server.key")
-		jobs <- err
-		close(jobs)
+		Start(8443, "../../keys/server.crt", "../../keys/server.key")
 	}()
 	assert.True(t, true)
 }
