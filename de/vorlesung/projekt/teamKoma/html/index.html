@@ -45,8 +45,8 @@
           <div class="input-group-prepend">
             <span class="input-group-text" id="">First and last name</span>
           </div>
-          <input type="text" class="form-control">
-          <input type="text" class="form-control">
+          <input type="text" class="form-control" required>
+          <input type="text" class="form-control" required>
         </div>
       </div>
       <div class="col">
@@ -61,7 +61,7 @@
           <div class="input-group-prepend">
             <span class="input-group-text" id="inputGroup-sizing-default">E-Mail</span>
           </div>
-          <input type="email" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+          <input type="email" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default" required>
         </div>
       </div>
       <div class="col">
@@ -70,12 +70,12 @@
     <br>
     <div class="row">
           <label for="subject">Subject</label>
-          <input type="text" class="form-control" id="subject" placeholder="Your Subject"> 
+          <input type="text" class="form-control" id="subject" placeholder="Your Subject" required> 
     </div>
     <br>
     <div class="row">
             <label for="description">Description</label>
-            <textarea class="form-control" id="description" rows="15"></textarea>
+            <textarea class="form-control" id="description" rows="15" required></textarea>
     </div>
     <br>
     <div class= "row justify-content-center">
@@ -106,11 +106,11 @@
             <form action="/login" method="post">
               <div class="form-group">
                   <label for="username">Username</label>
-                  <input type="text" class="form-control" id="username" aria-describedby="emailHelp" placeholder="Enter username" name="username">
+                  <input type="text" class="form-control" id="username" aria-describedby="emailHelp" placeholder="Enter username" name="username" required>
               </div>
               <div class="form-group">
                   <label for="password">Password</label>
-                  <input type="password" class="form-control" id="password" placeholder="Password" name="password">
+                  <input type="password" class="form-control" id="password" placeholder="Password" name="password" required>
               </div>
               <input type="submit" class="btn btn-primary btn-sm" value="Login">
           </form>
