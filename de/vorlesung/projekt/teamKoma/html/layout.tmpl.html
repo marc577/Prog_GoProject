@@ -1,3 +1,4 @@
+{{ define "layout" }}
 <!doctype html>
 <html lang="en">
   <head>
@@ -6,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
 
-    <title>{{.PageTitle}} || INF16A Programmieren Go - Ticketsystem</title>
+    <title>INF16A Programmieren Go - Ticketsystem</title>
   </head>
   <body>
 	<div class="container">
@@ -34,7 +35,7 @@
     <br>
     <br>
     
-    {{template content}}
+    {{template "content"}}
 
     <footer class="footer">
             <div class="container">
@@ -80,3 +81,4 @@
         <script src="assets/js/bootstrap.min.js"></script>
       </body>
     </html>
+    {{ end }}

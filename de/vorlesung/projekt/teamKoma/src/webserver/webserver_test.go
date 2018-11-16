@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ var server *httptest.Server
 
 func setupFunc(handler http.HandlerFunc) {
 	server = httptest.NewServer(http.HandlerFunc(handler))
+	htmlRoot = "../../html"
 }
 func setup(handler http.Handler) {
 	server = httptest.NewServer(handler)
@@ -22,35 +24,38 @@ func teardown() {
 	server.Close()
 }
 
-// func TestStart(t *testing.T) {
-// 	httpError := Start(8443, "../../keys/server.crt", "../../keys/server.key")
-// 	if httpError != nil {
-// 		t.Error("Error Init Webser", httpError)
-// 	} else {
-// 		log.Println("sd")
-// 	}
-// }
-
-func TestServeIndexGET(t *testing.T) {
+func TestServeIndex(t *testing.T) {
 	setupFunc(serveIndex)
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
-
-	_, er := ioutil.ReadAll(res.Body)
-	assert.NoError(t, er)
-}
-
-func TestServeIndexPOST(t *testing.T) {
-	setupFunc(serveIndex)
-	defer teardown()
-	res, err := http.Post(server.URL, "", nil)
+	body, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Wrong HTTP Method")
-	_, er := ioutil.ReadAll(res.Body)
-	assert.NoError(t, er)
+	assert.NotEmpty(t, body)
 }
+
+func TestServeDashAll(t *testing.T) {
+	setupFunc(serveDashAll)
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, body)
+}
+
+// func TestServeDashUn(t *testing.T) {
+// 	setupFunc(serveDashUn)
+// 	defer teardown()
+// 	res, err := http.Get(server.URL)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
+// 	body, err := ioutil.ReadAll(res.Body)
+// 	assert.NoError(t, err)
+// 	assert.NotEmpty(t, body)
+// }
 
 func TestMethodsAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -77,6 +82,36 @@ func TestMethodsNotAllow(t *testing.T) {
 	body, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "Hallo Welt", string(body))
+}
+func TestMustParamsOK(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("name")}, " ")
+		io.WriteString(w, responseString)
+	})
+	setup(adapt(simpleHandler, mustParams("name")))
+	defer teardown()
+	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
+	res, err := http.Get(url)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hallo Werner", string(body))
+}
+func TestMustParamsNotOK(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("name")}, " ")
+		io.WriteString(w, responseString)
+	})
+	setup(adapt(simpleHandler, mustParams("name")))
+	defer teardown()
+	url := strings.Join([]string{server.URL, "greet=Werner"}, "?")
+	res, err := http.Get(url)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "Hallo Werner", string(body))
 }
 
 func TestStart(t *testing.T) {

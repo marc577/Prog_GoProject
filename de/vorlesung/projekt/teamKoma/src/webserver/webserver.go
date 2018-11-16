@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"context"
 	"html/template"
 	"log"
 	"net/http"
@@ -33,26 +34,48 @@ func logger() adapter {
 		})
 	}
 }
-func MustParams() adapter {
+func mustParams(params ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Println(r.RequestURI)
+			q := r.URL.Query()
+			for _, param := range params {
+				if len(q.Get(param)) == 0 {
+					http.Error(w, "missing "+param, http.StatusBadRequest)
+					return // exit early
+				}
+			}
 			h.ServeHTTP(w, r)
 		})
 	}
 }
 
-// func basicAuthWrapper(authenticator Authenticator, handler http.HandlerFunc) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		user, pswd, ok := r.BasicAuth()
-// 		if ok && authenticator.Authenticate(user, pswd) {
-// 			handler(w, r)
-// 		} else {
-// 			w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
-// 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-// 		}
-// 	})
-// }
+func basicAuthWrapper(authenticator Authenticator) adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, pswd, ok := r.BasicAuth()
+			if ok && authenticator.Authenticate(user, pswd) {
+				ctx := context.WithValue(r.Context(), "Username", "Peter")
+				h.ServeHTTP(w, r.WithContext(ctx))
+			} else {
+				w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			}
+		})
+	}
+}
+
+func serveTemplate(t *template.Template, name string, data interface{}) adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := t.ExecuteTemplate(w, name, data)
+			if err != nil {
+				h.ServeHTTP(w, r)
+			} else {
+				//panic
+			}
+		})
+	}
+}
 
 // Adapts several http handlers
 // Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
@@ -81,6 +104,16 @@ var htmlRoot string
 
 func serveIndex(w http.ResponseWriter, req *http.Request) {
 	tPath := strings.Join([]string{htmlRoot, "index.html"}, "/")
+	t, _ := template.ParseFiles(tPath)
+	t.Execute(w, nil)
+}
+func serveDashAll(w http.ResponseWriter, req *http.Request) {
+	tPath := strings.Join([]string{htmlRoot, "dashboardAll.html"}, "/")
+	t, _ := template.ParseFiles(tPath)
+	t.Execute(w, nil)
+}
+func serveDashUn(w http.ResponseWriter, req *http.Request) {
+	tPath := strings.Join([]string{htmlRoot, "dashboardUnassigned.html"}, "/")
 	t, _ := template.ParseFiles(tPath)
 	t.Execute(w, nil)
 }
@@ -113,15 +146,46 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	htmlRoot = rootPath
 
-	staticFilePath := strings.Join([]string{htmlRoot, "assets"}, "/")
-
-	//http Route Handles
+	// static files
+	staticFilePath := htmlRoot + "/" + "assets"
 	fs := http.FileServer(http.Dir(staticFilePath))
 	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
-	http.Handle("/", adapt(http.HandlerFunc(serveIndex), logger()))
+	// templates
+	tmpls := make(map[string]*template.Template)
+	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
+	tmpls["dash"] = template.Must(template.ParseFiles(rootPath+"/dashAll.tmpl.html", rootPath+"/layout.tmpl.html"))
 
-	portString := strings.Join([]string{":", strconv.Itoa(port)}, "")
+	// templates, err := template.ParseFiles(allFiles...)
+	// if err != nil {
+	// 	//panic
+	// }
+	// tree := templates.Tree
+	// name := templates.DefinedTemplates()
+	// layoutTmpl := templates.Lookup("layout")
+	// fmt.Print(tree, name)
+	// newTicketTmpl := templates.Lookup("newticket.tmpl.html")
+	// layoutTmpl := templates.Lookup("layout.tmpl.html")
+	// layoutTmpl := template.Must(templates.Lookup("layout.tmpl.html"))
+	// layoutTmpl.ExecuteTemplate(os.Stdout, "layout", nil)
+	// fmt.Println()
+
+	//newTicketTemplate := templates.Lookup("newTicket.html")
+	//dashAll := templates.Lookup("dashAll.html")
+
+	// auth := func(user, pswd string) bool {
+	// 	fmt.Println(user, ":", pswd)
+	// 	return true
+	// }
+
+	http.Handle("/dash", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
+	// http.Handle("/dashu", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
+	// http.Handle("/dasho", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
+	// http.Handle("/dash", adapt(http.HandlerFunc(serveDashAll), basicAuthWrapper(AuthenticatorFunc(auth))))
+	http.Handle("/", adapt(nil, serveTemplate(tmpls["index"], "layout", nil)))
+
+	portString := ":" + strconv.Itoa(port)
+
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)
 
 	return httpErr

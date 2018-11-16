@@ -24,14 +24,6 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {{range .TicketsUnassigned}}
-                  <tr>
-                    <th scope="row">{{.TicketID}}</th>
-                    <td>{{.Subject}}</td>
-                    <td>{{.AssignedTo.Name}}</td>
-                    <td>{{.CreationDate}}</td>
-                    <td><a href=assign/{{.TicketID}}>Solve Ticket</a></td>
-                  </tr>
                 </tbody>
               </table>
         </div>
