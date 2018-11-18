@@ -114,6 +114,69 @@ func TestMustParamsNotOK(t *testing.T) {
 	assert.NotEqual(t, "Hallo Werner", string(body))
 }
 
+func TestBasicAuthWrapperWithoutPW(t *testing.T) {
+	setup(adapt(nil, basicAuthWrapper(nil)))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "wrong status")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusText(http.StatusUnauthorized)+"\n", string(body), "wrong message")
+}
+
+func TestBasicAuthWrapperWithOKPW(t *testing.T) {
+	var receivedName, receivedPW string
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctxVal := req.Context().Value(contextKeyUser)
+		assert.Equal(t, "<username>", ctxVal.(string), "Context not set")
+		io.WriteString(w, "Hello client\n")
+	})
+	auth := AuthenticatorFunc(func(n string, p string) bool {
+		receivedName = n
+		receivedPW = p
+		return true
+	})
+	setup(adapt(simpleHandler, basicAuthWrapper(auth)))
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", server.URL, nil)
+	assert.NoError(t, err)
+	req.SetBasicAuth("<username>", "<password>")
+	res, err := client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode, "wrong status code")
+	assert.Equal(t, "<username>", receivedName, "wrong username")
+	assert.Equal(t, "<password>", receivedPW, "wrong password")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello client\n", string(body), "wrong message")
+}
+
+func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
+	var receivedName, receivedPW string
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		io.WriteString(w, "Hello client\n")
+	})
+	auth := AuthenticatorFunc(func(n string, p string) bool {
+		receivedName = n
+		receivedPW = p
+		return false
+	})
+	setup(adapt(simpleHandler, basicAuthWrapper(auth)))
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", server.URL, nil)
+	assert.NoError(t, err)
+	req.SetBasicAuth("<username>", "<password>")
+	res, err := client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "wrong status code")
+	assert.Equal(t, "<username>", receivedName, "wrong username")
+	assert.Equal(t, "<password>", receivedPW, "wrong password")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusText(http.StatusUnauthorized)+"\n", string(body), "wrong message")
+}
+
 func TestStart(t *testing.T) {
 	go func() {
 		Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")

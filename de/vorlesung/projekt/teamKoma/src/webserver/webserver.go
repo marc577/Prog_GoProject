@@ -9,6 +9,16 @@ import (
 	"strings"
 )
 
+type contextKey string
+
+func (c contextKey) String() string {
+	return "webserver_" + string(c)
+}
+
+var (
+	contextKeyUser = contextKey("user")
+)
+
 type adapter func(http.HandlerFunc) http.HandlerFunc
 
 func methods(methods ...string) adapter {
@@ -54,7 +64,7 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, pswd, ok := r.BasicAuth()
 			if ok && authenticator.Authenticate(user, pswd) {
-				ctx := context.WithValue(r.Context(), "Username", "Peter")
+				ctx := context.WithValue(r.Context(), contextKeyUser, user)
 				h.ServeHTTP(w, r.WithContext(ctx))
 			} else {
 				w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
