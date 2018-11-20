@@ -96,10 +96,14 @@ func dataWrapperOpen() adapter {
 func dataWrapperAssigned() adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			data := storagehandler.GetNotClosedTicketsByProcessor("Werner")
-			ctx := context.WithValue(r.Context(), contextKey("data"), data)
-			if h != nil {
-				h.ServeHTTP(w, r.WithContext(ctx))
+			ctxVal := r.Context().Value(contextKey("user"))
+			if ctxVal != nil {
+				user := ctxVal.(string)
+				data := storagehandler.GetNotClosedTicketsByProcessor(user)
+				ctx := context.WithValue(r.Context(), contextKey("data"), data)
+				if h != nil {
+					h.ServeHTTP(w, r.WithContext(ctx))
+				}
 			}
 		})
 	}
@@ -147,6 +151,7 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 	return af(user, password)
 }
 
+// Start initializes the webserver
 func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
 
 	htmlRoot := rootPath
@@ -175,7 +180,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	// insert ticket via mail
 	http.Handle("/api/new", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 	// mail sending
-	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("GET"), basicAuthWrapper(auth)))
+	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("GET", "POST"), basicAuthWrapper(auth)))
 
 	//http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 
