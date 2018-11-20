@@ -2,21 +2,21 @@ package webserver
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"net/http"
+	"storagehandler"
 	"strconv"
 )
 
 type contextKey string
 
-func (c contextKey) String() string {
-	return "webserver_" + string(c)
-}
+// func (c contextKey) String() string {
+// 	return "webserver_" + string(c)
+// }
 
-var (
-	contextKeyUser = contextKey.String("user")
-)
+// var (
+// 	contextKeyUser = contextKey.String("user")
+// )
 
 type adapter func(http.HandlerFunc) http.HandlerFunc
 
@@ -71,9 +71,47 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
+func dataWrapperAll() adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			data := storagehandler.GetTickets()
+			ctx := context.WithValue(r.Context(), contextKey("data"), data)
+			if h != nil {
+				h.ServeHTTP(w, r.WithContext(ctx))
+			}
+		})
+	}
+}
+func dataWrapperOpen() adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			data := storagehandler.GetOpenTickets()
+			ctx := context.WithValue(r.Context(), contextKey("data"), data)
+			if h != nil {
+				h.ServeHTTP(w, r.WithContext(ctx))
+			}
+		})
+	}
+}
+func dataWrapperAssigned() adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			data := storagehandler.GetNotClosedTicketsByProcessor("Werner")
+			ctx := context.WithValue(r.Context(), contextKey("data"), data)
+			if h != nil {
+				h.ServeHTTP(w, r.WithContext(ctx))
+			}
+		})
+	}
+}
 func serveTemplateWrapper(t *template.Template, name string, data interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if data == nil {
+				ctxKey := contextKey("data")
+				ctxVal := r.Context().Value(ctxKey)
+				data = ctxVal
+			}
 			err := t.ExecuteTemplate(w, name, data)
 			if err != nil {
 				w.WriteHeader(500)
@@ -124,15 +162,12 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls["admin"] = template.Must(template.ParseFiles(rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["new"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 
-	auth := AuthenticatorFunc(func(user, pswd string) bool {
-		fmt.Println(user, ":", pswd)
-		return true
-	})
+	auth := AuthenticatorFunc(storagehandler.VerifyUser)
 
 	// frontend
-	http.Handle("/admin", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
-	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
-	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
+	http.Handle("/admin", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperOpen(), basicAuthWrapper(auth), methodsWrapper("GET")))
+	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperAssigned(), basicAuthWrapper(auth), methodsWrapper("GET")))
+	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperAll(), basicAuthWrapper(auth), methodsWrapper("GET")))
 	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["new"], "layout", nil)))
 	http.Handle("/", adapt(nil, serveTemplateWrapper(tmpls["index"], "layout", nil)))
 
@@ -141,7 +176,8 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	http.Handle("/api/new", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 	// mail sending
 	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("GET"), basicAuthWrapper(auth)))
-	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
+
+	//http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 
 	portString := ":" + strconv.Itoa(port)
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)

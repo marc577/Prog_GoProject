@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"storagehandler"
 	"strings"
 	"testing"
 
@@ -16,9 +17,11 @@ import (
 var server *httptest.Server
 
 func setupFunc(handler http.HandlerFunc) {
+	storagehandler.Init()
 	server = httptest.NewServer(http.HandlerFunc(handler))
 }
 func setup(handler http.Handler) {
+	storagehandler.Init()
 	server = httptest.NewServer(handler)
 }
 func teardown() {
@@ -30,8 +33,8 @@ func TestServeTemplate(t *testing.T) {
 		w.WriteHeader(200)
 	})
 	rootPath := "../../html"
-	tmpl := template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
-	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil)))
+	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
+	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), getDataWrapperAll()))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -42,7 +45,7 @@ func TestServeTemplate(t *testing.T) {
 }
 func TestServeTemplateFalse(t *testing.T) {
 	rootPath := "../../html"
-	tmpl := template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
+	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 	setup(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
 	defer teardown()
 	res, err := http.Get(server.URL)

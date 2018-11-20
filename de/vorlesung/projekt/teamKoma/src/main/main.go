@@ -4,16 +4,11 @@ import (
 	"flag"
 	"log"
 	"logging"
-	"runtime"
+	"storagehandler"
 	"strconv"
 	"strings"
 	"webserver"
 )
-
-func init() {
-	// Use all CPU cores
-	runtime.GOMAXPROCS(runtime.NumCPU())
-}
 
 func main() {
 
@@ -32,6 +27,8 @@ func main() {
 	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *tlsCrt}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
+
+	storagehandler.Init()
 
 	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
 	if wsErr != nil {
