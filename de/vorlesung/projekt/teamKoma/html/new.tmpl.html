@@ -1,5 +1,11 @@
 {{define "content"}}
-<form action="/submitNew" method="post">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary w-100">
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <h6 class="navbar-brand" style="margin-bottom:0px">Create New Ticket:</h6>
+    </div>
+    <a type="button" class="btn btn-default navbar-btn pull-right" href="./admin">Admin Panel</a>
+    </nav>
+<form action="/new" method="post" style="margin-top:25px">
         <div class="row">
           <div class="col">
           </div>
@@ -8,8 +14,8 @@
               <div class="input-group-prepend">
                 <span class="input-group-text" id="">First and last name</span>
               </div>
-              <input type="text" class="form-control" required>
-              <input type="text" class="form-control" required>
+              <input name="fName" type="text" class="form-control" required>
+              <input name="lName" type="text" class="form-control" required>
             </div>
           </div>
           <div class="col">
@@ -24,7 +30,7 @@
               <div class="input-group-prepend">
                 <span class="input-group-text" id="inputGroup-sizing-default">E-Mail</span>
               </div>
-              <input type="email" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default" required>
+              <input name="email" type="email" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default" required>
             </div>
           </div>
           <div class="col">
@@ -33,12 +39,12 @@
         <br>
         <div class="row">
               <label for="subject">Subject</label>
-              <input type="text" class="form-control" id="subject" placeholder="Your Subject" required> 
+              <input name="subject" type="text" class="form-control" id="subject" placeholder="Your Subject" required> 
         </div>
         <br>
         <div class="row">
                 <label for="description">Description</label>
-                <textarea class="form-control" id="description" rows="15" required></textarea>
+                <textarea name="description" class="form-control" id="description" rows="15" required></textarea>
         </div>
         <br>
         <div class= "row justify-content-center">

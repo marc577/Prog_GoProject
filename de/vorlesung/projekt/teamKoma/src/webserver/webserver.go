@@ -46,6 +46,14 @@ func mustParamsWrapper(params ...string) adapter {
 	}
 }
 
+func handleNewTicket(w http.ResponseWriter, r *http.Request) {
+	if r.PostForm == nil {
+		r.ParseForm()
+	}
+	t := storagehandler.CreateTicket(r.Form.Get("subject"), r.Form.Get("email"), r.Form.Get("description"))
+	t.Processor = "Werner"
+}
+
 func basicAuthWrapper(authenticator Authenticator) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +72,8 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 }
 
 type webContext struct {
-	Tickets *[]storagehandler.Ticket
-	Name    string
+	Data interface{}
+	Name string
 }
 
 func dataWrapperAll() adapter {
@@ -166,7 +174,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls := make(map[string]*template.Template)
 	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["admin"] = template.Must(template.ParseFiles(rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["new"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
 
 	auth := AuthenticatorFunc(storagehandler.VerifyUser)
 
@@ -174,7 +182,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	http.Handle("/admin", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperOpen(), basicAuthWrapper(auth), methodsWrapper("GET")))
 	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperAssigned(), basicAuthWrapper(auth), methodsWrapper("GET")))
 	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil), dataWrapperAll(), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["new"], "layout", nil)))
+	http.Handle("/new", adapt(handleNewTicket, serveTemplateWrapper(tmpls["added"], "layout", nil), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
 	http.Handle("/", adapt(nil, serveTemplateWrapper(tmpls["index"], "layout", nil)))
 
 	// rest-api
