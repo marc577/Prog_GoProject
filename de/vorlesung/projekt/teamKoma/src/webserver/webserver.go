@@ -10,14 +10,6 @@ import (
 
 type contextKey string
 
-// func (c contextKey) String() string {
-// 	return "webserver_" + string(c)
-// }
-
-// var (
-// 	contextKeyUser = contextKey.String("user")
-// )
-
 type adapter func(http.HandlerFunc) http.HandlerFunc
 
 func methodsWrapper(methods ...string) adapter {
@@ -151,7 +143,10 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 	return af(user, password)
 }
 
-// Start initializes the webserver
+// Start initializes the webserver with the required
+// parameters, registers the urls and sets the Authenticator
+// function to the VerifyUser function
+// from the storagehandler packet
 func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
 
 	htmlRoot := rootPath
@@ -178,9 +173,9 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	// rest-api
 	// insert ticket via mail
-	http.Handle("/api/new", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
+	http.Handle("/api/new", adapt(nil, mustParamsWrapper("POST"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
-	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("GET", "POST"), basicAuthWrapper(auth)))
+	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 
 	//http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 

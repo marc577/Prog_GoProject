@@ -34,7 +34,7 @@ func TestServeTemplate(t *testing.T) {
 	})
 	rootPath := "../../html"
 	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
-	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), getDataWrapperAll()))
+	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), dataWrapperAll()))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -178,10 +178,14 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+	//c := make(chan error, 1)
 	go func() {
 		Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")
+		//close(c)
 	}()
-	assert.True(t, true)
+	//time.Sleep(2 * time.Second)
+	//err := <-c
+	//assert.NoError(t, err)
 }
 
 // func TestHealthCheckHandler(t *testing.T) {
