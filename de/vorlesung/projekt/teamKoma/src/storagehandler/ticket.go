@@ -89,7 +89,7 @@ func (ticket Ticket) Delete() {
 
 func loadSpecificTicketFromMemory(ticketID string) Ticket {
 	var ticket Ticket
-	var byteValue = readJSONFromFile("../../storage/tickets/" + ticketID + ".json")
+	var byteValue = readJSONFromFile("../../../storage/tickets/" + ticketID + ".json")
 	json.Unmarshal(byteValue, &ticket)
 	return ticket
 }
@@ -97,7 +97,7 @@ func loadSpecificTicketFromMemory(ticketID string) Ticket {
 func loadFilesFromMemory() []Ticket {
 	var tickets []Ticket
 
-	file, err := os.Open("../../storage/tickets/")
+	file, err := os.Open("../../../storage/tickets/")
 	if err != nil {
 		log.Fatalf("failed opening directory: %s", err)
 	}
@@ -107,7 +107,7 @@ func loadFilesFromMemory() []Ticket {
 	for _, name := range list {
 		if strings.Contains(name, ".json") {
 			var ticket Ticket
-			var byteValue = readJSONFromFile("../../storage/tickets/" + name)
+			var byteValue = readJSONFromFile("../../../storage/tickets/" + name)
 			json.Unmarshal(byteValue, &ticket)
 			tickets = append(tickets, ticket)
 		}
@@ -120,7 +120,7 @@ func (ticket Ticket) writeTicketToMemory() Ticket {
 	if err != nil {
 		fmt.Println("Error while add user")
 	}
-	if writeJSONToFile(("../../storage/tickets/"+ticket.ID+".json"), result) == false {
+	if writeJSONToFile(("../../../storage/tickets/"+ticket.ID+".json"), result) == false {
 		fmt.Println("Error while write Ticket to memory")
 	}
 	return ticket

@@ -50,7 +50,7 @@ func verifyUser(username string, password string) bool {
 }
 
 func readAllUsersFromMemory() users {
-	var byteValue = readJSONFromFile("../../storage/users.json")
+	var byteValue = readJSONFromFile("../../../storage/users.json")
 	var users users
 	json.Unmarshal(byteValue, &users)
 	return users
@@ -85,7 +85,7 @@ func addUser(userName string, password string) bool {
 		return false
 	}
 
-	var byteValue = readJSONFromFile("../../storage/users.json")
+	var byteValue = readJSONFromFile("../../../storage/users.json")
 	var users users
 	json.Unmarshal(byteValue, &users)
 	var hashedPwd = saltedHash([]byte(password))
@@ -94,7 +94,7 @@ func addUser(userName string, password string) bool {
 	if err != nil {
 		fmt.Println("Error while add user")
 	}
-	return writeJSONToFile("../../storage/users.json", result)
+	return writeJSONToFile("../../../storage/users.json", result)
 }
 
 func deleteUser(userName string) bool {
@@ -104,7 +104,7 @@ func deleteUser(userName string) bool {
 		return false
 	}
 
-	var byteValue = readJSONFromFile("../../storage/users.json")
+	var byteValue = readJSONFromFile("../../../storage/users.json")
 	var oldUsers, newUsers users
 	json.Unmarshal(byteValue, &oldUsers)
 	for i := 0; i < len(oldUsers.Users); i++ {
@@ -116,5 +116,5 @@ func deleteUser(userName string) bool {
 	if err != nil {
 		fmt.Println("Error while delete user")
 	}
-	return writeJSONToFile("../../storage/users.json", result)
+	return writeJSONToFile("../../../storage/users.json", result)
 }
