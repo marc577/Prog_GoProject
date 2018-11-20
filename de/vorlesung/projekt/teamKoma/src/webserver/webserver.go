@@ -63,11 +63,16 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
+type webContext struct {
+	Tickets *[]storagehandler.Ticket
+	Name    string
+}
+
 func dataWrapperAll() adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			data := storagehandler.GetTickets()
-			ctx := context.WithValue(r.Context(), contextKey("data"), data)
+			web := webContext{storagehandler.GetTicketsPointer(), "all"}
+			ctx := context.WithValue(r.Context(), contextKey("data"), web)
 			if h != nil {
 				h.ServeHTTP(w, r.WithContext(ctx))
 			}
@@ -77,8 +82,8 @@ func dataWrapperAll() adapter {
 func dataWrapperOpen() adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			data := storagehandler.GetOpenTickets()
-			ctx := context.WithValue(r.Context(), contextKey("data"), data)
+			web := webContext{storagehandler.GetOpenTickets(), "open"}
+			ctx := context.WithValue(r.Context(), contextKey("data"), web)
 			if h != nil {
 				h.ServeHTTP(w, r.WithContext(ctx))
 			}
@@ -91,8 +96,8 @@ func dataWrapperAssigned() adapter {
 			ctxVal := r.Context().Value(contextKey("user"))
 			if ctxVal != nil {
 				user := ctxVal.(string)
-				data := storagehandler.GetNotClosedTicketsByProcessor(user)
-				ctx := context.WithValue(r.Context(), contextKey("data"), data)
+				web := webContext{storagehandler.GetNotClosedTicketsByProcessor(user), "assigned"}
+				ctx := context.WithValue(r.Context(), contextKey("data"), web)
 				if h != nil {
 					h.ServeHTTP(w, r.WithContext(ctx))
 				}
@@ -100,6 +105,7 @@ func dataWrapperAssigned() adapter {
 		})
 	}
 }
+
 func serveTemplateWrapper(t *template.Template, name string, data interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

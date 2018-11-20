@@ -21,26 +21,30 @@ func GetTickets() []Ticket {
 	return tickets
 }
 
+func GetTicketsPointer() *[]Ticket {
+	return &tickets
+}
+
 // GetNotClosedTicketsByProcessor returns an array of all open or in processing tickets by a processor
-func GetNotClosedTicketsByProcessor(processor string) []Ticket {
+func GetNotClosedTicketsByProcessor(processor string) *[]Ticket {
 	var openTicketsByProcessor []Ticket
 	for _, ticket := range tickets {
 		if ticket.TicketState != 2 && ticket.Processor == processor {
 			openTicketsByProcessor = append(openTicketsByProcessor, ticket)
 		}
 	}
-	return openTicketsByProcessor
+	return &openTicketsByProcessor
 }
 
 // GetOpenTickets return an array of tickets with the ticket state open
-func GetOpenTickets() []Ticket {
+func GetOpenTickets() *[]Ticket {
 	var openTickets []Ticket
 	for _, ticket := range tickets {
 		if ticket.TicketState == 0 {
 			openTickets = append(openTickets, ticket)
 		}
 	}
-	return openTickets
+	return &openTickets
 }
 
 func updateTicketInScopeVariable(ticket Ticket) {

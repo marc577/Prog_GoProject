@@ -12,7 +12,7 @@
           </div>
         </div>
       </nav>
-      <div class="row">
+      <div>
             <table class="table table-hover">
                 <thead>
                   <tr>
@@ -24,6 +24,15 @@
                   </tr>
                 </thead>
                 <tbody>
+                    {{if .Tickets}}{{ range .Tickets}}
+                    <tr>
+                      <td>{{ .ID}}</td>
+                      <td>{{ .Subject}}</td>
+                      <td>{{ .Processor}}</td>
+                      <td>{{ len .Items}}</td>
+                      <td>{{ .Processor}}</td>
+                    </tr>
+                    {{end}}{{end}}
                 </tbody>
               </table>
         </div>
