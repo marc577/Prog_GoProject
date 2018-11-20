@@ -2,11 +2,10 @@ package webserver
 
 import (
 	"context"
+	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type contextKey string
@@ -16,18 +15,20 @@ func (c contextKey) String() string {
 }
 
 var (
-	contextKeyUser = contextKey("user")
+	contextKeyUser = contextKey.String("user")
 )
 
 type adapter func(http.HandlerFunc) http.HandlerFunc
 
-func methods(methods ...string) adapter {
+func methodsWrapper(methods ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			method := r.Method
 			for _, me := range methods {
 				if me == method {
-					h.ServeHTTP(w, r)
+					if h != nil {
+						h.ServeHTTP(w, r)
+					}
 					return
 				}
 			}
@@ -36,25 +37,19 @@ func methods(methods ...string) adapter {
 		})
 	}
 }
-func logger() adapter {
+func mustParamsWrapper(params ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Println(r.RequestURI)
-			h.ServeHTTP(w, r)
-		})
-	}
-}
-func mustParams(params ...string) adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			q := r.URL.Query()
+			r.ParseForm()
 			for _, param := range params {
-				if len(q.Get(param)) == 0 {
+				if len(r.Form.Get(param)) == 0 {
 					http.Error(w, "missing "+param, http.StatusBadRequest)
-					return // exit early
+					return
 				}
 			}
-			h.ServeHTTP(w, r)
+			if h != nil {
+				h.ServeHTTP(w, r)
+			}
 		})
 	}
 }
@@ -64,8 +59,10 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, pswd, ok := r.BasicAuth()
 			if ok && authenticator.Authenticate(user, pswd) {
-				ctx := context.WithValue(r.Context(), contextKeyUser, user)
-				h.ServeHTTP(w, r.WithContext(ctx))
+				ctx := context.WithValue(r.Context(), contextKey("user"), user)
+				if h != nil {
+					h.ServeHTTP(w, r.WithContext(ctx))
+				}
 			} else {
 				w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -74,14 +71,16 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
-func serveTemplate(t *template.Template, name string, data interface{}) adapter {
+func serveTemplateWrapper(t *template.Template, name string, data interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := t.ExecuteTemplate(w, name, data)
 			if err != nil {
+				w.WriteHeader(500)
+				return
+			}
+			if h != nil {
 				h.ServeHTTP(w, r)
-			} else {
-				//panic
 			}
 		})
 	}
@@ -110,51 +109,9 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 	return af(user, password)
 }
 
-var htmlRoot string
-
-func serveIndex(w http.ResponseWriter, req *http.Request) {
-	tPath := strings.Join([]string{htmlRoot, "index.html"}, "/")
-	t, _ := template.ParseFiles(tPath)
-	t.Execute(w, nil)
-}
-func serveDashAll(w http.ResponseWriter, req *http.Request) {
-	tPath := strings.Join([]string{htmlRoot, "dashboardAll.html"}, "/")
-	t, _ := template.ParseFiles(tPath)
-	t.Execute(w, nil)
-}
-func serveDashUn(w http.ResponseWriter, req *http.Request) {
-	tPath := strings.Join([]string{htmlRoot, "dashboardUnassigned.html"}, "/")
-	t, _ := template.ParseFiles(tPath)
-	t.Execute(w, nil)
-}
-
-// e.g. http.HandleFunc("/health-check", HealthCheckHandler)
-// func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-// 	// A very simple health check.
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Header().Set("Content-Type", "application/json")
-
-// 	// In the future we could report back on the status of our DB, or our cache
-// 	// (e.g. Redis) by performing a simple PING, and include them in the response.
-// 	io.WriteString(w, `{"alive": true}`)
-// }
-
-// func serveLogin(w http.ResponseWriter, req *http.Request) {
-// 	fmt.Println("method:", req.Method) //get request method
-// 	if req.Method == "GET" {
-// 		t, _ := template.ParseFiles("../../html/login.html")
-// 		t.Execute(w, nil)
-// 	} else {
-// 		req.ParseForm()
-// 		// logic part of log in
-// 		fmt.Println("username:", req.Form["username"])
-// 		fmt.Println("password:", req.Form["password"])
-// 	}
-// }
-
 func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
 
-	htmlRoot = rootPath
+	htmlRoot := rootPath
 
 	// static files
 	staticFilePath := htmlRoot + "/" + "assets"
@@ -163,65 +120,31 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	// templates
 	tmpls := make(map[string]*template.Template)
-	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
-	tmpls["dash"] = template.Must(template.ParseFiles(rootPath+"/dashAll.tmpl.html", rootPath+"/layout.tmpl.html"))
+	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["admin"] = template.Must(template.ParseFiles(rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["new"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 
-	// templates, err := template.ParseFiles(allFiles...)
-	// if err != nil {
-	// 	//panic
-	// }
-	// tree := templates.Tree
-	// name := templates.DefinedTemplates()
-	// layoutTmpl := templates.Lookup("layout")
-	// fmt.Print(tree, name)
-	// newTicketTmpl := templates.Lookup("newticket.tmpl.html")
-	// layoutTmpl := templates.Lookup("layout.tmpl.html")
-	// layoutTmpl := template.Must(templates.Lookup("layout.tmpl.html"))
-	// layoutTmpl.ExecuteTemplate(os.Stdout, "layout", nil)
-	// fmt.Println()
+	auth := AuthenticatorFunc(func(user, pswd string) bool {
+		fmt.Println(user, ":", pswd)
+		return true
+	})
 
-	//newTicketTemplate := templates.Lookup("newTicket.html")
-	//dashAll := templates.Lookup("dashAll.html")
+	// frontend
+	http.Handle("/admin", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
+	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
+	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["admin"], "layout", nil)))
+	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["new"], "layout", nil)))
+	http.Handle("/", adapt(nil, serveTemplateWrapper(tmpls["index"], "layout", nil)))
 
-	// auth := func(user, pswd string) bool {
-	// 	fmt.Println(user, ":", pswd)
-	// 	return true
-	// }
-
-	http.Handle("/dash", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
-	// http.Handle("/dashu", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
-	// http.Handle("/dasho", adapt(nil, serveTemplate(tmpls["dash"], "layout", nil)))
-	// http.Handle("/dash", adapt(http.HandlerFunc(serveDashAll), basicAuthWrapper(AuthenticatorFunc(auth))))
-	http.Handle("/", adapt(nil, serveTemplate(tmpls["index"], "layout", nil)))
+	// rest-api
+	// insert ticket via mail
+	http.Handle("/api/new", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
+	// mail sending
+	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("GET"), basicAuthWrapper(auth)))
+	http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 
 	portString := ":" + strconv.Itoa(port)
-
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)
 
 	return httpErr
 }
-
-// func basicAuthWrapper(authenticator Authenticator, handler http.HandlerFunc) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		user, pswd, ok := r.BasicAuth()
-// 		if ok && authenticator.Authenticate(user, pswd) {
-// 			handler(w, r)
-// 		} else {
-// 			w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
-// 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-// 		}
-// 	})
-// }
-
-// func cookieAuthWrapper(authenticator Authenticator, handler http.HandlerFunc) http.Handler {
-// 	// return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 	// 	cookie, err := r.Cookie("cookie")
-// 	// 	user := cookie.Value
-// 	// 	if err == nil && authenticator.Authenticate(user, pswd) {
-// 	// 		handler(w, r)
-// 	// 	} else {
-// 	// 		w.Header().Set("WWW-Authenticate", "Basic realm=\"My Simple Server\"")
-// 	// 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-// 	// 	}
-// 	// })
-// }

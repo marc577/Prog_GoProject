@@ -1,6 +1,8 @@
 package webserver
 
 import (
+	"bytes"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +17,6 @@ var server *httptest.Server
 
 func setupFunc(handler http.HandlerFunc) {
 	server = httptest.NewServer(http.HandlerFunc(handler))
-	htmlRoot = "../../html"
 }
 func setup(handler http.Handler) {
 	server = httptest.NewServer(handler)
@@ -24,8 +25,13 @@ func teardown() {
 	server.Close()
 }
 
-func TestServeIndex(t *testing.T) {
-	setupFunc(serveIndex)
+func TestServeTemplate(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(200)
+	})
+	rootPath := "../../html"
+	tmpl := template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
+	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil)))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -34,34 +40,24 @@ func TestServeIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, body)
 }
-
-func TestServeDashAll(t *testing.T) {
-	setupFunc(serveDashAll)
+func TestServeTemplateFalse(t *testing.T) {
+	rootPath := "../../html"
+	tmpl := template.Must(template.ParseFiles(rootPath+"/newTicket.tmpl.html", rootPath+"/layout.tmpl.html"))
+	setup(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Wrong HTTP Status")
 	body, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, body)
+	assert.Empty(t, body)
 }
-
-// func TestServeDashUn(t *testing.T) {
-// 	setupFunc(serveDashUn)
-// 	defer teardown()
-// 	res, err := http.Get(server.URL)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
-// 	body, err := ioutil.ReadAll(res.Body)
-// 	assert.NoError(t, err)
-// 	assert.NotEmpty(t, body)
-// }
 
 func TestMethodsAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo Welt")
 	})
-	setup(adapt(simpleHandler, methods("GET")))
+	setup(adapt(simpleHandler, methodsWrapper("GET")))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -74,7 +70,7 @@ func TestMethodsNotAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo Welt")
 	})
-	setup(adapt(simpleHandler, methods("GET")))
+	setup(adapt(simpleHandler, methodsWrapper("GET")))
 	defer teardown()
 	res, err := http.Post(server.URL, "", nil)
 	assert.NoError(t, err)
@@ -85,25 +81,25 @@ func TestMethodsNotAllow(t *testing.T) {
 }
 func TestMustParamsOK(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("name")}, " ")
+		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("fname"), req.Form.Get("lname")}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, mustParams("name")))
+	setup(adapt(simpleHandler, mustParamsWrapper("fname", "lname")))
 	defer teardown()
-	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
-	res, err := http.Get(url)
+	url := strings.Join([]string{server.URL, "fname=Werner"}, "?")
+	res, err := http.Post(url, "application/x-www-form-urlencoded", bytes.NewBufferString("lname=Brenzel"))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 	body, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
-	assert.Equal(t, "Hallo Werner", string(body))
+	assert.Equal(t, "Hallo Werner Brenzel", string(body))
 }
 func TestMustParamsNotOK(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("name")}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, mustParams("name")))
+	setup(adapt(simpleHandler, mustParamsWrapper("name")))
 	defer teardown()
 	url := strings.Join([]string{server.URL, "greet=Werner"}, "?")
 	res, err := http.Get(url)
@@ -128,7 +124,8 @@ func TestBasicAuthWrapperWithoutPW(t *testing.T) {
 func TestBasicAuthWrapperWithOKPW(t *testing.T) {
 	var receivedName, receivedPW string
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctxVal := req.Context().Value(contextKeyUser)
+		ctxKey := contextKey("user")
+		ctxVal := req.Context().Value(ctxKey)
 		assert.Equal(t, "<username>", ctxVal.(string), "Context not set")
 		io.WriteString(w, "Hello client\n")
 	})
