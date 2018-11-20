@@ -3,7 +3,7 @@ package storagehandler
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,22 +23,22 @@ type user struct {
 const saltSize = 16
 
 func saltedHash(secret []byte) []byte {
-	buf := make([]byte, saltSize, saltSize+sha1.Size)
+	buf := make([]byte, saltSize, saltSize+sha256.Size)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
 		panic(fmt.Errorf("random read failed: %v", err))
 	}
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(buf)
 	h.Write(secret)
 	return h.Sum(buf)
 }
 
 func match(data, secret []byte) bool {
-	if len(data) != saltSize+sha1.Size {
+	if len(data) != saltSize+sha256.Size {
 		fmt.Println("wrong length of data")
 	}
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(data[:saltSize])
 	h.Write(secret)
 	return bytes.Equal(h.Sum(nil), data[saltSize:])
