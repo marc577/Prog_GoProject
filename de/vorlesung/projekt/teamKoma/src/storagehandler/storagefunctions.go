@@ -1,8 +1,8 @@
 package storagehandler
 
 import (
-	"fmt"
 	"io/ioutil"
+	"logging"
 	"os"
 )
 
@@ -21,9 +21,9 @@ func readJSONFromFile(file string) []byte {
 	jsonFile, err := os.Open(file)
 
 	if err != nil {
-		fmt.Println(err)
+		logging.Error.Panic(err)
 	} else {
-		fmt.Println("Successfully Opened users.json")
+		logging.Info.Println("Successfully Opened users.json")
 	}
 
 	defer jsonFile.Close()

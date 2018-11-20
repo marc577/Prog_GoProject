@@ -13,7 +13,8 @@ import (
 func main() {
 
 	logLoc := flag.String("logLoc", "../../../log", "Logfile Location")
-	storeLoc := flag.String("storeLoc", "../../../storage", "Ticketsystem Storage Path")
+	userStoreLoc := flag.String("userLoc", "../../../storage/users.json", "User Storage Path")
+	ticketStoreLoc := flag.String("ticketLoc", "../../../storage/tickets", "Ticket Storage Path")
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 	tlsCrt := flag.String("crt", "../../../keys/server.crt", "https Webserver Certificate")
 	tlsKey := flag.String("key", "../../../keys/server.key", "https Webserver Keyfile")
@@ -22,13 +23,14 @@ func main() {
 	flag.Parse()
 	logging.LogInit(*logLoc)
 	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", *logLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: StoreLoc:", *storeLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: userStoreLoc:", *userStoreLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: TicketStoreLoc:", *ticketStoreLoc}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*webPort)}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *tlsCrt}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
 
-	storagehandler.Init()
+	storagehandler.Init(*userStoreLoc, *ticketStoreLoc)
 
 	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
 	if wsErr != nil {

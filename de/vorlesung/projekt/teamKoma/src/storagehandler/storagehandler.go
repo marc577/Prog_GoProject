@@ -3,7 +3,7 @@ package storagehandler
 var tickets []Ticket
 
 // Init loads the storage into ROM
-func Init() bool {
+func Init(userStorePath string, ticketStorePath string) bool {
 	tickets = loadFilesFromMemory()
 	return true
 }
