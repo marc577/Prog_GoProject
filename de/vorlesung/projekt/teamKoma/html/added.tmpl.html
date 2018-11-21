@@ -3,11 +3,12 @@
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <h6 class="navbar-brand" style="margin-bottom:0px">Ticket created</h6>
     </div>
-    <a type="button" class="btn btn-default navbar-btn pull-right" href="./admin">Admin Panel</a>
+    <a type="button" class="btn btn-default navbar-btn pull-right" href="./open">Admin Panel</a>
   </nav>
   <div class="container">
     <br>
     <h4>Ticket successfully created!</h4>
+    <h3>{{.Data.ID}}</h3>
     <a href="./">New Ticket</a>
 </div>
 {{end}}

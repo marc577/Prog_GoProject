@@ -1,19 +1,20 @@
 {{define "content"}}
+    <h4>Welcome {{.User}}</h4>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary w-100">
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
         <h6 class="navbar-brand" style="margin-bottom:0px">Overview:</h6>
         <div class="navbar-nav">
-          {{ if eq .Name "open"}}
-          <a  class="nav-item nav-link active" href="./admin">Open Tickets</a>
+          {{ if eq .Path "/open"}}
+          <a  class="nav-item nav-link active" href="./open">Open Tickets</a>
           {{ else }}
-          <a  class="nav-item nav-link" href="./admin">Open Tickets</a>
+          <a  class="nav-item nav-link" href="./open">Open Tickets</a>
           {{ end }}
-          {{ if eq .Name "assigned"}}
+          {{ if eq .Path "/assigned"}}
           <a class="nav-item nav-link active" href="./assigned">Tickets Assigned to me</a>
           {{ else }}
           <a class="nav-item nav-link" href="./assigned">Tickets Assigned to me</a>
           {{ end }}
-          {{ if eq .Name "all"}}
+          {{ if eq .Path "/all"}}
           <a class="nav-item nav-link active" href="./all">All Tickets</a>
           {{ else }}
           <a class="nav-item nav-link" href="./all">All Tickets</a>
@@ -25,23 +26,11 @@
       <div>
             <table class="table table-hover">
                 <thead>
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Subject</th>
-                    <th scope="col">Assigned to</th>
-                    <th scope="col">Date</th>
-                    <th scope="col">Assign to me</th>
-                  </tr>
+                  {{template "tickethead" .}}
                 </thead>
                 <tbody>
                     {{if .Data}}{{ range .Data}}
-                    <tr>
-                      <td>{{ .ID}}</td>
-                      <td>{{ .Subject}}</td>
-                      <td>{{ .Processor}}</td>
-                      <td>{{ len .Items}}</td>
-                      <td>{{ .Processor}}</td>
-                    </tr>
+                    {{template "ticketrow" .}}
                     {{end}}{{end}}
                 </tbody>
               </table>

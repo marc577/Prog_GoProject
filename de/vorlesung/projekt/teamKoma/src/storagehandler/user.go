@@ -10,10 +10,10 @@ import (
 )
 
 type users struct {
-	Users []user `json:"users"`
+	Users []User `json:"users"`
 }
 
-type user struct {
+type User struct {
 	UID      int    `json:"uid"`
 	Name     string `json:"name"`
 	Password []byte `json:"password"`
@@ -56,8 +56,8 @@ func readAllUsersFromMemory() users {
 	return users
 }
 
-func readSpecificUserFromMemory(userName string) user {
-	var specUser user
+func readSpecificUserFromMemory(userName string) User {
+	var specUser User
 	var users = readAllUsersFromMemory()
 	for _, user := range users.Users {
 		if user.Name == userName {
@@ -89,7 +89,7 @@ func addUser(userName string, password string) bool {
 	var users users
 	json.Unmarshal(byteValue, &users)
 	var hashedPwd = saltedHash([]byte(password))
-	users.Users = append(users.Users, user{0, userName, hashedPwd, false})
+	users.Users = append(users.Users, User{0, userName, hashedPwd, false})
 	result, err := json.Marshal(users)
 	if err != nil {
 		fmt.Println("Error while add user")

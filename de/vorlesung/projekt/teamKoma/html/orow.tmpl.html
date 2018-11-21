@@ -1,0 +1,20 @@
+{{define "tickethead"}}
+<tr>
+  <th scope="col">#</th>
+  <th scope="col">Subject</th>
+  <th scope="col">Items</th>
+  <th scope="col">Date</th>
+  <th scope="col">Assign to me</th>
+</tr>
+{{end}}
+{{define "ticketrow"}}
+<tr>
+    <td>{{ .ID}}</td>
+    <td>{{ .Subject}}</td>
+    <td>{{ len .Items}}</td>
+    <td>{{ .Items}}</td>
+    <td>
+      <a type="button" class="btn btn-default navbar-btn pull-right" href="">Assign To Me</a>
+    </td>
+  </tr>
+{{end}}

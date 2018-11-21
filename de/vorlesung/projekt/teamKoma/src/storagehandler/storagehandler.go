@@ -25,6 +25,10 @@ func GetTicketsPointer() *[]Ticket {
 	return &tickets
 }
 
+func GetTicket(id string) Ticket {
+	return tickets[0]
+}
+
 // GetNotClosedTicketsByProcessor returns an array of all open or in processing tickets by a processor
 func GetNotClosedTicketsByProcessor(processor string) *[]Ticket {
 	var openTicketsByProcessor []Ticket
