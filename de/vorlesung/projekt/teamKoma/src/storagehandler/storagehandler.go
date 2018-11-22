@@ -27,10 +27,6 @@ func New(argUserStoreFile string, argTicketStoreDir string) *StorageHandler {
 ** TICKET FUNCTIONS
 ************************************ */
 
-func (handler *StorageHandler) setTickets(newTickets []Ticket) {
-	handler.tickets = newTickets
-}
-
 // GetTickets returns all tickets
 func (handler *StorageHandler) GetTickets() *[]Ticket {
 	return &handler.tickets
@@ -68,25 +64,18 @@ func (handler *StorageHandler) GetOpenTickets() *[]Ticket {
 	return &openTickets
 }
 
-func (handler *StorageHandler) updateTicketInScopeVariable(ticket Ticket) {
-	var newTickets []Ticket
-	for _, t := range handler.tickets {
-		if t.ID == ticket.ID {
-			newTickets = append(newTickets, ticket)
-		} else {
-			newTickets = append(newTickets, t)
-		}
-	}
-	handler.setTickets(newTickets)
-}
-
 // UpdateTicket updates the ticket in memory and rom
 // Returns the updated Ticket
 func (handler *StorageHandler) UpdateTicket(ticket Ticket) Ticket {
 	// Update in memory storage
-	var t = ticket.writeTicketToMemory()
+	ticket.writeTicketToMemory()
 	// Update in scope variable
-	handler.updateTicketInScopeVariable(t)
+	for i := 0; i < len(handler.tickets); i++ {
+		if handler.tickets[i].ID == ticket.ID {
+			handler.tickets[i] = ticket
+			break
+		}
+	}
 	return ticket
 }
 

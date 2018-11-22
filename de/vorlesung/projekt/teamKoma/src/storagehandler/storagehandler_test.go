@@ -7,6 +7,9 @@ import (
 var testUserStorageFile = "../../storage/users.json"
 var testTicketStorageDir = "../../storage/tickets/"
 
+var userName = "SuperTestUser2"
+var userPassword = "SuperPasswort"
+
 /* ************************************
 ** TICKET TEST FUNCTIONS
 ************************************ */
@@ -34,12 +37,29 @@ func TestTicketHandling(t *testing.T) {
 		t.Error("Ticket is not add in scope variable")
 	}
 
-	// Check if the scope variable has changed after update an item
+	// Check if the scope variable has changed after update an itemState to open
 	var openTicketsLen = len(*storageHandler.GetOpenTickets())
 	testTicket.SetTicketStateClosed()
 	var newOpenTicketLen = len(*storageHandler.GetOpenTickets())
 	if openTicketsLen != (newOpenTicketLen + 1) {
 		t.Error("Ticket is not up to date in scope variable")
+	}
+
+	// Creates an test user for set in processing by user
+	if storageHandler.CreateUser(userName, userPassword) == false {
+		t.Error("user could not be created")
+	}
+
+	// Check if the scope variable has changed after update an itemState to inProcessing
+	var ticketsByProcessorLen = len(*storageHandler.GetNotClosedTicketsByProcessor(userName))
+	testTicket.SetTicketStateInProgress(userName)
+	var newTicketsByProcessorLen = len(*storageHandler.GetNotClosedTicketsByProcessor(userName))
+	if ticketsByProcessorLen != (newTicketsByProcessorLen - 1) {
+		t.Error("Ticket is not up to date in scope variable")
+	}
+
+	if storageHandler.DeleteUser(userName) == false {
+		t.Error("User could not deleted")
 	}
 
 }
@@ -57,8 +77,6 @@ func TestTicketHandling(t *testing.T) {
 func TestUserFunctions(t *testing.T) {
 	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
 
-	var userName = "SuperTestUser2"
-	var userPassword = "SuperPasswort"
 	var usersLen = len(*storageHandler.GetUsers())
 	if storageHandler.CreateUser(userName, userPassword) == false {
 		t.Error("user could not be created")
