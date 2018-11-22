@@ -17,6 +17,8 @@
 
 # ignore log files
 de/vorlesung/projekt/teamKoma/log/*
+de/vorlesung/projekt/teamKoma/storage/tickets/*
+de/vorlesung/projekt/teamKoma/storage/users.json
 
 # ignore vscode debug
 <<<<<<< HEAD
