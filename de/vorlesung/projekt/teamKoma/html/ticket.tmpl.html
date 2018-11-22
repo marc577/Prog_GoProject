@@ -1,3 +1,38 @@
 {{define "content"}}
-    <h4>Ticket Detatil Page</h4>
+    <h4>Welcome {{ .User }}</h4>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary w-100">
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <h6 class="navbar-brand" style="margin-bottom:0px">{{ .Data.ID}}</h6>
+        </div>
+        <a type="button" class="btn btn-default navbar-btn pull-right" href="javascript:history.back()">Back</a>
+      </nav>
+      <br>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Creator</td>
+                <td>{{.Data}}{{.Data}}</td>
+            </tr>
+            <tr>
+                <td>Subject</td>
+                <td>{{.Data.Subject}}</td>
+            </tr>
+            <tr>
+                <td>State</td>
+                <td>
+                    <select>
+                        <option value="0" {{if eq .Data.TicketState 0}} selected="selected" {{end}}>Open</option>
+                        <option value="1" {{if eq .Data.TicketState 1}} selected="selected" {{end}}>In Progress</option>
+                        <option value="2" {{if eq .Data.TicketState 2}} selected="selected" {{end}}>Closed</option>
+                    </select>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 {{end}}
