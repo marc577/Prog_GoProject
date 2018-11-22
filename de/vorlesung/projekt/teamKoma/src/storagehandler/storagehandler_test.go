@@ -7,67 +7,41 @@ import (
 var testUserStorageFile = "../../storage/users.json"
 var testTicketStorageDir = "../../storage/tickets/"
 
-func TestInit(t *testing.T) {
-	Init(testUserStorageFile, testTicketStorageDir)
-}
-
 /* ************************************
 ** TICKET TEST FUNCTIONS
 ************************************ */
 func TestTicketHandling(t *testing.T) {
 
 	// Load all tickets from storage
-	Init(testUserStorageFile, testTicketStorageDir)
-	var allTickets = GetTickets()
+	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
+	var allTickets = *storageHandler.GetTickets()
 
 	// Check if allTickets is nil
 	if allTickets == nil {
 		t.Error("Error in allTickets")
 	}
-	var originLen = len(*allTickets)
+	var originLen = len(allTickets)
 
-	// Check if the subject is correct
-	var testTicket = CreateTicket("TestSubject", "TestMail", "TestText")
+	// Check if the subject is correct after creation
+	var testTicket = storageHandler.CreateTicket("TestSubject", "TestMail", "TestText")
 	if testTicket.Subject != "TestSubject" {
 		t.Error("Ticket subject is wrong")
 	}
 
-	allTickets = GetTickets()
-
-	// Check if the scope vaiable was updated
-	if (originLen + 1) != len(*allTickets) {
+	// Check if the scope vaiable was updated after creation
+	allTickets = *storageHandler.GetTickets()
+	if (originLen + 1) != len(allTickets) {
 		t.Error("Ticket is not add in scope variable")
 	}
 
-	var openTicketsLen = len(*GetOpenTickets())
-
+	// Check if the scope variable has changed after update an item
+	var openTicketsLen = len(*storageHandler.GetOpenTickets())
 	testTicket.SetTicketStateClosed()
-	var newOpenTicketLen = len(*GetOpenTickets())
-
+	var newOpenTicketLen = len(*storageHandler.GetOpenTickets())
 	if openTicketsLen != (newOpenTicketLen + 1) {
 		t.Error("Ticket is not up to date in scope variable")
 	}
 
-}
-func TestGetNotClosedTicketsByProcessor(t *testing.T) {
-	Init(testUserStorageFile, testTicketStorageDir)
-	if GetNotClosedTicketsByProcessor("Klaus") == nil {
-		t.Error("Error in function GetNotClosedTicketsByProcessor")
-	}
-}
-
-func TestGetOpenTickets(t *testing.T) {
-	Init(testUserStorageFile, testTicketStorageDir)
-	if GetOpenTickets() == nil {
-		t.Error("Error in function GetOpenTickets")
-	}
-}
-
-func TestDeleteTicket(t *testing.T) {
-	Init(testUserStorageFile, testTicketStorageDir)
-	if 1 == 2 {
-		t.Error("not implemented")
-	}
 }
 
 /* ************************************
@@ -81,31 +55,37 @@ func TestDeleteTicket(t *testing.T) {
 ************************************ */
 
 func TestUserFunctions(t *testing.T) {
-	Init(testUserStorageFile, testTicketStorageDir)
+	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
 
-	var userName = "SuperTestUser"
+	var userName = "SuperTestUser2"
 	var userPassword = "SuperPasswort"
-	if CreateUser(userName, userPassword) == false {
+	var usersLen = len(*storageHandler.GetUsers())
+	if storageHandler.CreateUser(userName, userPassword) == false {
 		t.Error("user could not be created")
 	}
+	var newUsersLen = len(*storageHandler.GetUsers())
 
-	if CreateUser(userName, userPassword) {
+	if usersLen != newUsersLen-1 {
+		t.Error("User is not updated in scope variable")
+	}
+
+	if storageHandler.CreateUser(userName, userPassword) {
 		t.Error("User is duplicated")
 	}
 
-	if VerifyUser(userName, userPassword) == false {
+	if storageHandler.VerifyUser(userName, userPassword) == false {
 		t.Error("User password could not verified")
 	}
 
-	if VerifyUser(userName, "wrongPassword") {
+	if storageHandler.VerifyUser(userName, "wrongPassword") {
 		t.Error("Userpassword should be wrong")
 	}
 
-	if DeleteUser(userName) == false {
+	if storageHandler.DeleteUser(userName) == false {
 		t.Error("User could not deleted")
 	}
 
-	if DeleteUser(userName) {
+	if storageHandler.DeleteUser(userName) {
 		t.Error("User should not be deleted")
 	}
 

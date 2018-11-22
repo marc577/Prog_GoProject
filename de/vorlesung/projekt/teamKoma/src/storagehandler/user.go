@@ -9,16 +9,12 @@ import (
 	"io"
 )
 
-type users struct {
-	Users []User `json:"users"`
-}
-
 // User struct defines the user information of processors
 type User struct {
-	UID      int    `json:"uid"`
-	Name     string `json:"name"`
-	Password []byte `json:"password"`
-	Urlaub   bool   `json:"urlaub"`
+	UID        int    `json:"uid"`
+	Name       string `json:"name"`
+	Password   []byte `json:"password"`
+	HasHoliday bool   `json:"hasHiiday"`
 }
 
 const saltSize = 16
@@ -45,22 +41,21 @@ func match(data, secret []byte) bool {
 	return bytes.Equal(h.Sum(nil), data[saltSize:])
 }
 
-func verifyUser(username string, password string) bool {
-	var user = readSpecificUserFromMemory(username)
+func (handler *StorageHandler) verifyUser(username string, password string) bool {
+	var user = handler.getUserByUserName(username)
 	return match(user.Password, []byte(password))
 }
 
-func readAllUsersFromMemory() users {
-	var byteValue = readJSONFromFile(userStoreFile)
-	var users users
-	json.Unmarshal(byteValue, &users)
-	return users
+func (handler *StorageHandler) loadUserFromMemory() []User {
+	var byteValue = readJSONFromFile(handler.userStoreFile)
+	json.Unmarshal(byteValue, &handler.users)
+	return handler.users
 }
 
-func readSpecificUserFromMemory(userName string) User {
+func (handler *StorageHandler) getUserByUserName(userName string) User {
 	var specUser User
-	var users = readAllUsersFromMemory()
-	for _, user := range users.Users {
+	var users = handler.GetUsers()
+	for _, user := range *users {
 		if user.Name == userName {
 			specUser = user
 			break
@@ -69,53 +64,50 @@ func readSpecificUserFromMemory(userName string) User {
 	return specUser
 }
 
-func isUserAvailable(userName string) bool {
+func (handler *StorageHandler) isUserAvailable(userName string) bool {
 	var isUserAvailable = false
-	var users = readAllUsersFromMemory()
-	for i := 0; i < len(users.Users); i++ {
-		if users.Users[i].Name == userName {
+	var users = handler.GetUsers()
+	for i := 0; i < len(*users); i++ {
+		if (*users)[i].Name == userName {
 			return true
 		}
 	}
 	return isUserAvailable
 }
 
-func addUser(userName string, password string) bool {
-	if isUserAvailable(userName) {
+func (handler *StorageHandler) addUser(userName string, password string) bool {
+	if handler.isUserAvailable(userName) {
 		fmt.Println("user existiert bereits")
 		return false
 	}
-
-	var byteValue = readJSONFromFile(userStoreFile)
-	var users users
-	json.Unmarshal(byteValue, &users)
 	var hashedPwd = saltedHash([]byte(password))
-	users.Users = append(users.Users, User{0, userName, hashedPwd, false})
-	result, err := json.Marshal(users)
+	handler.users = append((handler).users, User{0, userName, hashedPwd, false})
+	result, err := json.Marshal(handler.users)
 	if err != nil {
 		fmt.Println("Error while add user")
 	}
-	return writeJSONToFile(userStoreFile, result)
+	return writeJSONToFile(handler.userStoreFile, result)
 }
 
-func deleteUser(userName string) bool {
+func (handler *StorageHandler) deleteUser(userName string) bool {
 
-	if isUserAvailable(userName) == false {
+	if handler.isUserAvailable(userName) == false {
 		fmt.Println("user does not exists")
 		return false
 	}
-
-	var byteValue = readJSONFromFile(userStoreFile)
-	var oldUsers, newUsers users
-	json.Unmarshal(byteValue, &oldUsers)
-	for i := 0; i < len(oldUsers.Users); i++ {
-		if oldUsers.Users[i].Name != userName {
-			newUsers.Users = append(newUsers.Users, oldUsers.Users[i])
+	var i int
+	for i = 0; i < len(*handler.GetUsers()); i++ {
+		if (*handler.GetUsers())[i].Name == userName {
+			break
 		}
 	}
-	result, err := json.Marshal(newUsers)
+	handler.users[i] = handler.users[len(handler.users)-1]
+	handler.users[len(handler.users)-1] = User{}
+	handler.users = handler.users[:len(handler.users)-1]
+
+	result, err := json.Marshal(*handler.GetUsers())
 	if err != nil {
 		fmt.Println("Error while delete user")
 	}
-	return writeJSONToFile(userStoreFile, result)
+	return writeJSONToFile(handler.userStoreFile, result)
 }
