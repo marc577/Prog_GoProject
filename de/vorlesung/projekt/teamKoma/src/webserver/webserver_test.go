@@ -17,11 +17,14 @@ import (
 var server *httptest.Server
 
 func setupFunc(handler http.HandlerFunc) {
-	storagehandler.Init()
+	storagehandler.Init("../../storage/users.json", "../../storage/tickets")
 	server = httptest.NewServer(http.HandlerFunc(handler))
 }
 func setup(handler http.Handler) {
-	storagehandler.Init()
+	storagehandler.Init("../../storage/users.json", "../../storage/tickets")
+	server = httptest.NewServer(handler)
+}
+func setupSimple(handler http.HandlerFunc) {
 	server = httptest.NewServer(handler)
 }
 func teardown() {
@@ -176,6 +179,21 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusText(http.StatusUnauthorized)+"\n", string(body), "wrong message")
 }
+
+// func TestRedirectWrapper(t *testing.T) {
+// 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+// 		io.WriteString(w, "Hello client\n")
+// 	})
+// 	server.Config.
+// 	setupSimple(adapt(simpleHandler, redirectWrapper("edit")))
+// 	defer teardown()
+// 	res, err := http.Get(server.URL)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, http.StatusPermanentRedirect, res.StatusCode, "wrong status")
+// 	body, err := ioutil.ReadAll(res.Body)
+// 	assert.NoError(t, err)
+// 	assert.NotEqual(t, "Hello client\n", string(body), "not redirectec")
+// }
 
 func TestStart(t *testing.T) {
 	//c := make(chan error, 1)
