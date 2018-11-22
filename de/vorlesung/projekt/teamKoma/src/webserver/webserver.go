@@ -250,10 +250,10 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	htmlRoot := rootPath
 
-	defaultfuncs := map[string]interface{}{
+	defaultOpenTicketFuncs := map[string]interface{}{
 		"getUser": func() string { return "" },
 	}
-	defaultT := template.New("").Funcs(defaultfuncs)
+	defaultOpenT := template.New("").Funcs(defaultOpenTicketFuncs)
 
 	// static files
 	staticFilePath := htmlRoot + "/" + "assets"
@@ -264,7 +264,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls := make(map[string]*template.Template)
 
 	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["open"] = template.Must(defaultT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["open"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["assigned"] = template.Must(template.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["all"] = template.Must(template.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
