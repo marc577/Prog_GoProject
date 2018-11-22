@@ -1,9 +1,15 @@
 package storagehandler
 
+import "errors"
+
 var tickets []Ticket
+var userStoreFile string
+var ticketStoreDir string
 
 // Init loads the storage into ROM
-func Init(userStorePath string, ticketStorePath string) bool {
+func Init(argUserStoreFile string, argTicketStoreDir string) bool {
+	userStoreFile = argUserStoreFile
+	ticketStoreDir = argTicketStoreDir
 	tickets = loadFilesFromMemory()
 	return true
 }
@@ -17,16 +23,18 @@ func setTickets(newTickets []Ticket) {
 }
 
 // GetTickets returns all tickets
-func GetTickets() []Ticket {
-	return tickets
-}
-
-func GetTicketsPointer() *[]Ticket {
+func GetTickets() *[]Ticket {
 	return &tickets
 }
 
-func GetTicket(id string) Ticket {
-	return tickets[0]
+// GetTicketByID Returns a ticket by the given id
+func GetTicketByID(id string) (Ticket, error) {
+	for _, ticket := range tickets {
+		if ticket.ID == id {
+			return ticket, nil
+		}
+	}
+	return Ticket{}, errors.New("can not find ticket by the given id")
 }
 
 // GetNotClosedTicketsByProcessor returns an array of all open or in processing tickets by a processor

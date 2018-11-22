@@ -77,11 +77,12 @@ func (ticket Ticket) AddEntry2Ticket(email string, text string) Ticket {
 
 // Delete the ticket
 func (ticket Ticket) Delete() {
+	// TODO: other solution
 	var newTickets []Ticket
 	var oldTickets = GetTickets()
-	for i := 0; i < len(oldTickets); i++ {
-		if oldTickets[i].ID != ticket.ID {
-			newTickets = append(newTickets, oldTickets[i])
+	for i := 0; i < len(*oldTickets); i++ {
+		if (*oldTickets)[i].ID != ticket.ID {
+			newTickets = append(newTickets, (*oldTickets)[i])
 		}
 	}
 	setTickets(newTickets)
@@ -89,7 +90,7 @@ func (ticket Ticket) Delete() {
 
 func loadSpecificTicketFromMemory(ticketID string) Ticket {
 	var ticket Ticket
-	var byteValue = readJSONFromFile("../../../storage/tickets/" + ticketID + ".json")
+	var byteValue = readJSONFromFile(ticketStoreDir + ticketID + ".json")
 	json.Unmarshal(byteValue, &ticket)
 	return ticket
 }
@@ -97,7 +98,7 @@ func loadSpecificTicketFromMemory(ticketID string) Ticket {
 func loadFilesFromMemory() []Ticket {
 	var tickets []Ticket
 
-	file, err := os.Open("../../../storage/tickets/")
+	file, err := os.Open(ticketStoreDir)
 	if err != nil {
 		log.Fatalf("failed opening directory: %s", err)
 	}
@@ -107,7 +108,7 @@ func loadFilesFromMemory() []Ticket {
 	for _, name := range list {
 		if strings.Contains(name, ".json") {
 			var ticket Ticket
-			var byteValue = readJSONFromFile("../../../storage/tickets/" + name)
+			var byteValue = readJSONFromFile(ticketStoreDir + name)
 			json.Unmarshal(byteValue, &ticket)
 			tickets = append(tickets, ticket)
 		}
@@ -120,7 +121,7 @@ func (ticket Ticket) writeTicketToMemory() Ticket {
 	if err != nil {
 		fmt.Println("Error while add user")
 	}
-	if writeJSONToFile(("../../../storage/tickets/"+ticket.ID+".json"), result) == false {
+	if writeJSONToFile((ticketStoreDir+ticket.ID+".json"), result) == false {
 		fmt.Println("Error while write Ticket to memory")
 	}
 	return ticket
@@ -133,6 +134,6 @@ func storeTicket(subject string, email string, text string) Ticket {
 	item := TicketItem{currentTime, email, text}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
-	newTicket := Ticket{ticketID, subject, TSOpen, "", mItems}
+	newTicket := &Ticket{ticketID, subject, TSOpen, "", mItems}
 	return newTicket.writeTicketToMemory()
 }

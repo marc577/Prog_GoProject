@@ -4,8 +4,11 @@ import (
 	"testing"
 )
 
+var testUserStorageFile = "../../storage/users.json"
+var testTicketStorageDir = "../../storage/tickets/"
+
 func TestInit(t *testing.T) {
-	Init()
+	Init(testUserStorageFile, testTicketStorageDir)
 }
 
 /* ************************************
@@ -14,13 +17,14 @@ func TestInit(t *testing.T) {
 func TestTicketHandling(t *testing.T) {
 
 	// Load all tickets from storage
-	Init()
+	Init(testUserStorageFile, testTicketStorageDir)
 	var allTickets = GetTickets()
 
 	// Check if allTickets is nil
 	if allTickets == nil {
 		t.Error("Error in allTickets")
 	}
+	var originLen = len(*allTickets)
 
 	// Check if the subject is correct
 	var testTicket = CreateTicket("TestSubject", "TestMail", "TestText")
@@ -28,41 +32,39 @@ func TestTicketHandling(t *testing.T) {
 		t.Error("Ticket subject is wrong")
 	}
 
-	var originLen = len(allTickets)
 	allTickets = GetTickets()
 
 	// Check if the scope vaiable was updated
-	if (originLen + 1) != len(allTickets) {
+	if (originLen + 1) != len(*allTickets) {
 		t.Error("Ticket is not add in scope variable")
 	}
 
-	var openTickets = GetOpenTickets()
-	var openTicketsLen = len(openTickets)
+	var openTicketsLen = len(*GetOpenTickets())
 
 	testTicket.SetTicketStateClosed()
-	var newOpenTicketLen = len(GetOpenTickets())
+	var newOpenTicketLen = len(*GetOpenTickets())
 
-	if openTicketsLen != (newOpenTicketLen - 1) {
+	if openTicketsLen != (newOpenTicketLen + 1) {
 		t.Error("Ticket is not up to date in scope variable")
 	}
 
 }
 func TestGetNotClosedTicketsByProcessor(t *testing.T) {
-	Init()
+	Init(testUserStorageFile, testTicketStorageDir)
 	if GetNotClosedTicketsByProcessor("Klaus") == nil {
 		t.Error("Error in function GetNotClosedTicketsByProcessor")
 	}
 }
 
 func TestGetOpenTickets(t *testing.T) {
-	Init()
+	Init(testUserStorageFile, testTicketStorageDir)
 	if GetOpenTickets() == nil {
 		t.Error("Error in function GetOpenTickets")
 	}
 }
 
 func TestDeleteTicket(t *testing.T) {
-	Init()
+	Init(testUserStorageFile, testTicketStorageDir)
 	if 1 == 2 {
 		t.Error("not implemented")
 	}
@@ -79,6 +81,7 @@ func TestDeleteTicket(t *testing.T) {
 ************************************ */
 
 func TestUserFunctions(t *testing.T) {
+	Init(testUserStorageFile, testTicketStorageDir)
 
 	var userName = "SuperTestUser"
 	var userPassword = "SuperPasswort"
