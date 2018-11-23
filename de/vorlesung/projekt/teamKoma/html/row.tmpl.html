@@ -3,10 +3,11 @@
   <th scope="col">#</th>
   <th scope="col">Subject</th>
   <th scope="col">Processor</th>
+  <th scope="col">State</th>
   <th scope="col">Creation Date</th>
   <th scope="col">Items</th>
   <th scope="col">Last Modified</th>
-  <th scope="col"></th>
+  <th scope="col">Edit</th>
 </tr>
 {{end}}
 {{define "ticketrow"}}
@@ -14,6 +15,16 @@
     <td>{{ .ID}}</td>
     <td>{{ .Subject}}</td>
     <td>{{ .Processor}}</td>
+
+    {{if eq .TicketState 2}}
+    <td class="table-success">Closed</td>
+    {{end}}
+    {{if eq .TicketState 1}}
+    <td class="table-warning">In Progress</td>
+    {{end}}
+    {{if eq .TicketState 0}}
+    <td>Open</td>
+    {{end}}
     <td>Datum erster Eintrag</td>
     <td>{{ len .Items}}</td>
     <td>Datum vletzer Eintrag</td>
