@@ -25,9 +25,9 @@
     {{if eq .TicketState 0}}
     <td>Open</td>
     {{end}}
-    <td>Datum erster Eintrag</td>
+    <td>{{ .GetFirstEntryOfTicket.CreationDate.Format "02 Jan 2006  15:04"}}</td>
     <td>{{ len .Items}}</td>
-    <td>Datum vletzer Eintrag</td>
+    <td>{{ .GetLastEntryOfTicket.CreationDate.Format "02 Jan 2006  15:04"}}</td>
     <td>
         <a type="button" class="btn btn-default navbar-btn pull-right" href="./edit?ticket={{.ID}}">Edit</a>
     </td>

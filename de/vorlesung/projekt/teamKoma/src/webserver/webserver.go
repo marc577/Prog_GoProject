@@ -206,8 +206,9 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		"getAllTByProcessor": func() []string {
 			return []string{"Werner"}
 		},
-		"getNonHolydaier": func() []string {
-			return []string{"Werner"}
+		"getNonHolydaier": func() *[]storagehandler.User {
+			user := st.GetAvailableUsers()
+			return user
 		},
 	})
 
@@ -247,7 +248,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			http.Error(w, http.StatusText(http.StatusNotFound)+"|email", http.StatusNotFound)
 			return nil
 		}
-		t := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("email"), r.Form.Get("description"))
+		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("fName"), r.Form.Get("email"), r.Form.Get("lName"))
 		return context.WithValue(r.Context(), contextKey("data"), t)
 	}), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
 	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string) interface{} {
@@ -262,6 +263,10 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		//TODO: add entry to ticket (perhaps inform kunde)
 		return nil
 	}), mustParamsWrapper("ticket", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
+	http.Handle("/edit/free", adapt(nil, redirectWrapper("/assigned"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		//TODO: set ticket to free
+		return nil
+	}), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
 
 	http.Handle("/edit/combine", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		//TODO: combine ticket ticket and ticket toticket and redirect to the new ticket

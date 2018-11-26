@@ -13,7 +13,7 @@
     <td>{{ .ID}}</td>
     <td>{{ .Subject}}</td>
     <td>{{ len .Items}}</td>
-    <td>{{ .Items}}</td>
+    <td>{{ .GetFirstEntryOfTicket.CreationDate.Format "02 Jan 2006  15:04"}}</td>
     <td>
       <a type="button" class="btn btn-default navbar-btn pull-right" href="./assign?ticket={{.ID}}&user={{getUser}}">Assign To Me</a>
     </td>
