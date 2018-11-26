@@ -201,6 +201,15 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	defaultOpenT := template.New("").Funcs(map[string]interface{}{
 		"getUser": func() string { return "" },
 	})
+	defaultEditT := template.New("").Funcs(map[string]interface{}{
+		"getUser": func() string { return "" },
+		"getAllTByProcessor": func() []string {
+			return []string{"Werner"}
+		},
+		"getNonHolydaier": func() []string {
+			return []string{"Werner"}
+		},
+	})
 
 	// static files
 	staticFilePath := htmlRoot + "/" + "assets"
@@ -215,7 +224,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls["assigned"] = template.Must(template.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["all"] = template.Must(template.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["edit"] = template.Must(template.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["edit"] = template.Must(defaultEditT.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
 
 	auth := AuthenticatorFunc(st.VerifyUser)
 
