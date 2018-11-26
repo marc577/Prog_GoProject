@@ -1,7 +1,9 @@
 package storagehandler
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 var testUserStorageFile = "../../storage/users.json"
@@ -13,6 +15,29 @@ var userPassword = "SuperPasswort"
 /* ************************************
 ** TICKET TEST FUNCTIONS
 ************************************ */
+
+func TestSandBox(t *testing.T) {
+	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
+	var testTicket, _ = storageHandler.CreateTicket("TestSubject", "First Entry", "TestMail", "TestFirstName", "TestLastName")
+	time.Sleep(1 * time.Second)
+	testTicket.AddEntry2Ticket("TestMail", "Second Entry")
+	time.Sleep(1 * time.Second)
+	testTicket.AddEntry2Ticket("TestMail", "Third Entry")
+	time.Sleep(1 * time.Second)
+	testTicket.AddEntry2Ticket("TestMail", "Last Entry")
+	time.Sleep(1 * time.Second)
+	ticketEntry, error := testTicket.GetLastEntryOfTicket()
+	if error != nil {
+		fmt.Println("Error")
+	}
+	fmt.Println(ticketEntry)
+
+	ticketEntry, error = testTicket.GetFirstEntryOfTicket()
+	if error != nil {
+		fmt.Println("Error")
+	}
+	fmt.Println(ticketEntry)
+}
 func TestTicketHandling(t *testing.T) {
 
 	// Load all tickets from storage
@@ -26,8 +51,13 @@ func TestTicketHandling(t *testing.T) {
 	var originLen = len(allTickets)
 
 	// Check if the subject is correct after creation
-	var testTicket = storageHandler.CreateTicket("TestSubject", "TestMail", "TestText")
-	if testTicket.Subject != "TestSubject" {
+	var testTicket, errCreateTicket = storageHandler.CreateTicket("TestSubject", "TestText", "TestMail", "TestFirstName", "TestLastName")
+	if testTicket.Subject != "TestSubject" && errCreateTicket != nil {
+		t.Error("Ticket subject is wrong")
+	}
+
+	testTicket, errorSetSubject := testTicket.SetSubject("TestSubject2")
+	if testTicket.Subject != "TestSubject2" && errorSetSubject != nil {
 		t.Error("Ticket subject is wrong")
 	}
 
@@ -37,12 +67,27 @@ func TestTicketHandling(t *testing.T) {
 		t.Error("Ticket is not add in scope variable")
 	}
 
+	var newTestTicket, errGetTicketByID = storageHandler.GetTicketByID(testTicket.ID)
+	if newTestTicket.ID != testTicket.ID && errGetTicketByID != nil {
+		t.Error("Error by get ticket by ID")
+	}
+
+	newTestTicket, errGetTicketByID = storageHandler.GetTicketByID("")
+	if errGetTicketByID == nil {
+		t.Error("Error should be null")
+	}
+
 	// Check if the scope variable has changed after update an itemState to open
 	var openTicketsLen = len(*storageHandler.GetOpenTickets())
-	testTicket.SetTicketStateClosed()
+	testTicket, errorSetTicketStateClosed := testTicket.SetTicketStateClosed()
 	var newOpenTicketLen = len(*storageHandler.GetOpenTickets())
-	if openTicketsLen != (newOpenTicketLen + 1) {
-		t.Error("Ticket is not up to date in scope variable")
+	if openTicketsLen != (newOpenTicketLen+1) && errorSetTicketStateClosed != nil {
+		t.Error("Ticket is not up to date in rom")
+	}
+
+	testTicket, errorSetTicketStateOpen := testTicket.SetTicketStateOpen()
+	if testTicket.TicketState != TSOpen && errorSetTicketStateOpen != nil {
+		t.Error("Ticket state is wrong")
 	}
 
 	// Creates an test user for set in processing by user
@@ -55,11 +100,18 @@ func TestTicketHandling(t *testing.T) {
 	testTicket.SetTicketStateInProgress(userName)
 	var newTicketsByProcessorLen = len(*storageHandler.GetNotClosedTicketsByProcessor(userName))
 	if ticketsByProcessorLen != (newTicketsByProcessorLen - 1) {
-		t.Error("Ticket is not up to date in scope variable")
+		t.Error("Ticket is not up to date in rom")
 	}
 
 	if storageHandler.DeleteUser(userName) == false {
 		t.Error("User could not deleted")
+	}
+
+	var ticketEntryLen = len(testTicket.Items)
+	testTicket.AddEntry2Ticket("testmail", "testText")
+	var newTicketEntryLen = len(testTicket.Items)
+	if ticketEntryLen != newTicketEntryLen-1 {
+		t.Error("Error while adding ticket entry to testticket")
 	}
 
 }
@@ -78,13 +130,19 @@ func TestUserFunctions(t *testing.T) {
 	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
 
 	var usersLen = len(*storageHandler.GetUsers())
+	var availableUsersLen = len(*storageHandler.GetAvailableUsers())
 	if storageHandler.CreateUser(userName, userPassword) == false {
 		t.Error("user could not be created")
 	}
 	var newUsersLen = len(*storageHandler.GetUsers())
+	var newAvailableUsersLen = len(*storageHandler.GetAvailableUsers())
 
 	if usersLen != newUsersLen-1 {
 		t.Error("User is not updated in scope variable")
+	}
+
+	if availableUsersLen != newAvailableUsersLen-1 {
+		t.Error("User might not created correkt")
 	}
 
 	if storageHandler.CreateUser(userName, userPassword) {

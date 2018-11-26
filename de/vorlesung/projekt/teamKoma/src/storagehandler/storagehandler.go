@@ -66,9 +66,9 @@ func (handler *StorageHandler) GetOpenTickets() *[]Ticket {
 
 // UpdateTicket updates the ticket in memory and rom
 // Returns the updated Ticket
-func (handler *StorageHandler) UpdateTicket(ticket Ticket) Ticket {
+func (handler *StorageHandler) UpdateTicket(ticket Ticket) (Ticket, error) {
 	// Update in memory storage
-	ticket.writeTicketToMemory()
+	ticket, error := ticket.writeTicketToMemory()
 	// Update in scope variable
 	for i := 0; i < len(handler.tickets); i++ {
 		if handler.tickets[i].ID == ticket.ID {
@@ -76,25 +76,16 @@ func (handler *StorageHandler) UpdateTicket(ticket Ticket) Ticket {
 			break
 		}
 	}
-	return ticket
+	return ticket, error
 }
 
 // CreateTicket creates a new ticket on persistant storage and rom
 // Returns the created Ticket
-func (handler *StorageHandler) CreateTicket(subject string, email string, text string) Ticket {
-	var ticket = storeTicket(handler, subject, email, text)
+func (handler *StorageHandler) CreateTicket(subject string, text string, firstName string, email string, lastName string) (Ticket, error) {
+	var ticket, error = storeTicket(handler, subject, text, email, firstName, lastName)
 	handler.tickets = append(handler.tickets, ticket)
-	return ticket
+	return ticket, error
 }
-
-/*
-func (handler *StorageHandler) deleteTicket(ticket Ticket) bool {
-
-	var ticket = storeTicket(handler, subject, email, text)
-	handler.tickets = append(handler.tickets, ticket)
-	return ticket
-}
-*/
 
 /* ************************************
 ** USER FUNCTIONS
