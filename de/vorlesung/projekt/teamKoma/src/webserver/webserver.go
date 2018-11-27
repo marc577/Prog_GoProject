@@ -97,13 +97,13 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
-func dataWrapper(key string, f func(s string) interface{}) adapter {
+func dataWrapper(key string, f func(s string, r *http.Request) interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctxVal := r.Context().Value(contextKey(key))
 			if ctxVal != nil {
 				user := ctxVal.(string)
-				data := f(user)
+				data := f(user, r)
 				ctx := context.WithValue(r.Context(), contextKey("data"), data)
 				if h != nil {
 					h.ServeHTTP(w, r.WithContext(ctx))
@@ -210,6 +210,12 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			user := st.GetAvailableUsers()
 			return user
 		},
+		"getTsWithSameP": func(p string) *[]storagehandler.Ticket {
+			if p == "" {
+				return &[]storagehandler.Ticket{}
+			}
+			return st.GetNotClosedTicketsByProcessor(p)
+		},
 	})
 
 	// static files
@@ -230,13 +236,13 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	auth := AuthenticatorFunc(st.VerifyUser)
 
 	// frontend
-	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), dataWrapper("user", func(s string) interface{} {
+	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetOpenTickets()
 	}), basicAuthWrapper(auth)))
-	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string) interface{} {
+	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetNotClosedTicketsByProcessor(s)
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string) interface{} {
+	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetTickets()
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
 
@@ -251,9 +257,25 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("fName"), r.Form.Get("email"), r.Form.Get("lName"))
 		return context.WithValue(r.Context(), contextKey("data"), t)
 	}), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
-	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string) interface{} {
-		//TODO: if POST update first
+	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string, r *http.Request) interface{} {
 		t, err := st.GetTicketByID(s)
+
+		if r.Method == "POST" {
+			state := r.Form.Get("state")
+			switch state {
+			case "0":
+				t, err = t.SetTicketStateOpen()
+			case "1":
+				tp := r.Form.Get("processor")
+				if tp == "" {
+					break
+				}
+				t, err = t.SetTicketStateInProgress(tp)
+			case "2":
+				t, err = t.SetTicketStateClosed()
+			}
+		}
+
 		if err != nil {
 			return nil
 		}
@@ -261,10 +283,18 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	}), saveParamsWrapper("ticket"), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 	http.Handle("/edit/add", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		//TODO: add entry to ticket (perhaps inform kunde)
+
 		return nil
 	}), mustParamsWrapper("ticket", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	http.Handle("/edit/free", adapt(nil, redirectWrapper("/assigned"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
-		//TODO: set ticket to free
+		t, er := st.GetTicketByID(r.Form.Get("ticket"))
+		if er != nil {
+			http.NotFound(w, r)
+		}
+		_, er = t.SetTicketStateOpen()
+		if er != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
 		return nil
 	}), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
 

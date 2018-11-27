@@ -4,7 +4,7 @@
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
             <h6 class="navbar-brand" style="margin-bottom:0px">{{ .Data.ID}}</h6>
         </div>
-        <a type="button" class="btn btn-default navbar-btn pull-right" href="javascript:history.back()">Back</a>
+        <a type="button" class="btn btn-default navbar-btn pull-right" href="./open">Admin Panel</a>
       </nav>
       <br>
     <table class="table">
@@ -33,10 +33,12 @@
                     </td>
                     <td>
                         <label for="processor">Processor:</label>
-                        <select name="processor">
+                        <select name="processor" {{if eq .Data.TicketState 2}} disabled {{end}}>
                                 {{ $holidayFree := getNonHolydaier }}
                                 {{ range $holidayFree }}
+                                {{ if ne $.Data.Processor .Name}}
                                 <option value="{{.Name}}">{{.Name}}</option>
+                                {{ end }}
                                 {{ end }}
                                 <option selected value="{{ .Data.Processor }}" >{{ .Data.Processor }}</option>
                         </select>
@@ -44,17 +46,24 @@
                     </td>
                     </form>
                 </tr>
+                {{if ne .Data.Processor ""}}
                 <tr>
                     <form action="./edit/combine?ticket={{.Data.ID}}" method="post">
                         <td>Add this ticket {{.Data.ID}} to</td>
                         <td>
+                            {{$tWithSame := getTsWithSameP .Data.Processor}}
                             <select name="toticket">
-                                <option value="1" >[Alle Tickets mit selben bearbeiter]</option>
+                                {{ range $tWithSame }}
+                                {{ if ne $.Data.ID .ID}}
+                                <option value="{{.ID}}" >{{.Subject}} - {{.ID}}</option>
+                                {{ end }}
+                                {{ end }}
                             </select>
                             <input type="submit" class="btn btn-secondary" style="float: right;" value="Combine">
                         </td>
                     </form>
                 </tr>
+                {{ end }}
             <tr>
                 <td colspan="2">
                     <form action="./edit/add?ticket={{.Data.ID}}" method="POST">
