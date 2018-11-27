@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"logging"
+	"os"
 	"storagehandler"
 	"strconv"
 	"strings"
@@ -30,6 +31,10 @@ func main() {
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
 
+	createDirIfNotExist(logLoc)
+	createDirIfNotExist(ticketStoreLoc)
+	createDirIfNotExist(htmlLoc)
+
 	storagehandler.Init(*userStoreLoc, *ticketStoreLoc)
 
 	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
@@ -38,5 +43,21 @@ func main() {
 		logging.Error.Fatal("WebServer Error", wsErr)
 	}
 	logging.ShutdownLogging()
+
+}
+
+func createDirIfNotExist(dir string) (success bool) {
+	success = false
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			success = false
+			logging.Error.Panic("Could not create Folder"+dir+": ", err)
+			return success
+		}
+		success = true
+	}
+
+	return success
 
 }
