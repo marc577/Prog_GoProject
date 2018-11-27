@@ -19,18 +19,11 @@ import (
 
 var server *httptest.Server
 
-func setupFunc(handler http.HandlerFunc) *storagehandler.StorageHandler {
-	server = httptest.NewServer(http.HandlerFunc(handler))
-	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
-}
 func setup(handler http.Handler) *storagehandler.StorageHandler {
 	server = httptest.NewServer(handler)
 	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
 func setupSimple(handler http.Handler) {
-	server = httptest.NewServer(handler)
-}
-func setupSimpleFunc(handler http.HandlerFunc) {
 	server = httptest.NewServer(handler)
 }
 func teardown() {
@@ -273,21 +266,26 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+
+	urlsGET := []string{"/open", "/assigned", "/all", "/edit", "/edit/free", "/assign", "/api/mail"}
+
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	url := "https://localhost:8443"
+	host := "https://localhost:8443"
 	st := storagehandler.New("../../storage/users.json", "../../storage/tickets/")
 	go func() {
 		serr := Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html", st)
 		assert.NoError(t, serr)
 	}()
 	time.Sleep(2 * time.Second)
-	client := &http.Client{Transport: transCfg}
-	req, err := http.NewRequest("GET", url+"/open", nil)
-	req.SetBasicAuth("Werner", "password")
-	res, err := client.Do(req)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	for _, url := range urlsGET {
+		client := &http.Client{Transport: transCfg}
+		req, err := http.NewRequest("GET", host+url, nil)
+		req.SetBasicAuth("Werner", "password")
+		res, err := client.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode, url)
+	}
 
 }
