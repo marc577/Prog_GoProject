@@ -1,10 +1,9 @@
 package storagehandler
 
+// Email hold information about an email to send
 type Email struct {
-	ticketID      string
-	ticketItem    TicketItem
-	emailAdressTo string
-	emailText     string
+	ticketID   string
+	ticketItem TicketItem
 }
 
 // GetMailsToSend returns an array of all mails which have to bee sended
@@ -13,7 +12,7 @@ func (handler *StorageHandler) GetMailsToSend() []Email {
 	for _, ticket := range handler.tickets {
 		for _, item := range ticket.Items {
 			if item.IsToSend {
-				mails2send = append(mails2send, Email{ticket.ID, item, item.EmailTo, item.EmailText})
+				mails2send = append(mails2send, Email{ticket.ID, item})
 			}
 		}
 	}
@@ -30,7 +29,6 @@ func (handler *StorageHandler) SetSendedMails(sendedMails []Email) bool {
 		for _, item := range ticket.Items {
 			if item.CreationDate == email.ticketItem.CreationDate {
 				item.IsSended = true
-				item.IsToSend = true
 				ticket, error = handler.UpdateTicket(ticket)
 				if error != nil {
 					return false

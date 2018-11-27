@@ -46,8 +46,6 @@ type Ticket struct {
 	TicketState    TicketState              `json:"ticketState"`
 	Processor      string                   `json:"processor"`
 	Items          map[time.Time]TicketItem `json:"items"`
-	// mail of ticket creator
-	Email string `json:"email"`
 	// Name of ticket creator
 	Name string `json:"name"`
 }
@@ -162,6 +160,6 @@ func storeTicket(storageHandler *StorageHandler, subject string, text string, em
 	item := TicketItem{currentTime, name, text, false, false, "", ""}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
-	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, email, name}
+	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, name}
 	return newTicket.writeTicketToMemory()
 }

@@ -14,7 +14,7 @@ type User struct {
 	UID        int    `json:"uid"`
 	Name       string `json:"name"`
 	Password   []byte `json:"password"`
-	HasHoliday bool   `json:"hasHiiday"`
+	HasHoliday bool   `json:"hasHoliday"`
 }
 
 const saltSize = 16
