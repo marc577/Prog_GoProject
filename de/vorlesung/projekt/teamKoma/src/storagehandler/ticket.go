@@ -28,6 +28,7 @@ const (
 // TicketItem represents an entry of a ticket
 type TicketItem struct {
 	CreationDate time.Time `json:"creationDate"`
+	Creator      string    `json:"creator"`
 	Email        string    `json:"email"`
 	Text         string    `json:"text"`
 }
@@ -78,17 +79,17 @@ func (ticket Ticket) SetTicketStateInProgress(processor string) (Ticket, error) 
 // The processor will be resetet
 func (ticket Ticket) SetTicketStateClosed() (Ticket, error) {
 	ticket.TicketState = TSClosed
-	ticket.Processor = ""
 	return ticket.storageHandler.UpdateTicket(ticket)
 }
 
 // AddEntry2Ticket adds an entry to the given ticket
-func (ticket Ticket) AddEntry2Ticket(email string, text string) (Ticket, error) {
+func (ticket Ticket) AddEntry2Ticket(creator string, email string, text string) (Ticket, error) {
 	currTime := time.Now()
-	ticket.Items[currTime] = TicketItem{currTime, email, text}
+	ticket.Items[currTime] = TicketItem{currTime, creator, email, text}
 	return ticket.storageHandler.UpdateTicket(ticket)
 }
 
+// GetLastEntryOfTicket returns the last ticket entry of a ticket
 func (ticket Ticket) GetLastEntryOfTicket() (TicketItem, error) {
 	var time time.Time
 	var lastItem TicketItem
@@ -101,6 +102,7 @@ func (ticket Ticket) GetLastEntryOfTicket() (TicketItem, error) {
 	return lastItem, nil
 }
 
+// GetFirstEntryOfTicket returns the first ticket entry of a ticket
 func (ticket Ticket) GetFirstEntryOfTicket() (TicketItem, error) {
 	var time = time.Now()
 	var firstItem TicketItem
@@ -151,7 +153,7 @@ func storeTicket(storageHandler *StorageHandler, subject string, text string, em
 	currentTime := time.Now()
 	//ticketID := string(currentTime.Format("20060102150405")) + "_" + email
 	ticketID := createTicketID(currentTime, email, firstName, lastName)
-	item := TicketItem{currentTime, email, text}
+	item := TicketItem{currentTime, firstName + " " + lastName, email, text}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
 	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, email, firstName, lastName}

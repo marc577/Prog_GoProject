@@ -20,11 +20,11 @@ func TestSandBox(t *testing.T) {
 	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
 	var testTicket, _ = storageHandler.CreateTicket("TestSubject", "First Entry", "TestMail", "TestFirstName", "TestLastName")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "Second Entry")
+	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Second Entry")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "Third Entry")
+	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Third Entry")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "Last Entry")
+	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Last Entry")
 	time.Sleep(1 * time.Second)
 	ticketEntry, error := testTicket.GetLastEntryOfTicket()
 	if error != nil {
@@ -96,9 +96,9 @@ func TestTicketHandling(t *testing.T) {
 	}
 
 	// Check if the scope variable has changed after update an itemState to inProcessing
-	var ticketsByProcessorLen = len(*storageHandler.GetNotClosedTicketsByProcessor(userName))
+	var ticketsByProcessorLen = len(*storageHandler.GetOpenTicketsByProcessor(userName))
 	testTicket.SetTicketStateInProgress(userName)
-	var newTicketsByProcessorLen = len(*storageHandler.GetNotClosedTicketsByProcessor(userName))
+	var newTicketsByProcessorLen = len(*storageHandler.GetOpenTicketsByProcessor(userName))
 	if ticketsByProcessorLen != (newTicketsByProcessorLen - 1) {
 		t.Error("Ticket is not up to date in rom")
 	}
@@ -108,7 +108,7 @@ func TestTicketHandling(t *testing.T) {
 	}
 
 	var ticketEntryLen = len(testTicket.Items)
-	testTicket.AddEntry2Ticket("testmail", "testText")
+	testTicket.AddEntry2Ticket("testmail", "TestCreator", "testText")
 	var newTicketEntryLen = len(testTicket.Items)
 	if ticketEntryLen != newTicketEntryLen-1 {
 		t.Error("Error while adding ticket entry to testticket")

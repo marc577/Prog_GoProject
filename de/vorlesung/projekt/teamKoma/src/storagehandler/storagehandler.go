@@ -42,8 +42,8 @@ func (handler *StorageHandler) GetTicketByID(id string) (Ticket, error) {
 	return Ticket{}, errors.New("can not find ticket by the given id")
 }
 
-// GetNotClosedTicketsByProcessor returns an array of all open or in processing tickets by a processor
-func (handler *StorageHandler) GetNotClosedTicketsByProcessor(processor string) *[]Ticket {
+// GetOpenTicketsByProcessor returns an array of all open or in processing tickets by a processor
+func (handler *StorageHandler) GetOpenTicketsByProcessor(processor string) *[]Ticket {
 	var openTicketsByProcessor []Ticket
 	for _, ticket := range handler.tickets {
 		if ticket.TicketState != 2 && ticket.Processor == processor {
