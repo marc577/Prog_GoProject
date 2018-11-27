@@ -11,7 +11,7 @@ func (handler *StorageHandler) GetMailsToSend() []Email {
 	var mails2send []Email
 	for _, ticket := range handler.tickets {
 		for _, item := range ticket.Items {
-			if item.IsToSend {
+			if item.IsToSend && !item.IsSended {
 				mails2send = append(mails2send, Email{ticket.ID, item})
 			}
 		}
@@ -29,6 +29,7 @@ func (handler *StorageHandler) SetSendedMails(sendedMails []Email) bool {
 		for _, item := range ticket.Items {
 			if item.CreationDate == email.TicketItem.CreationDate {
 				item.IsSended = true
+				ticket.Items[item.CreationDate] = item
 				ticket, error = handler.UpdateTicket(ticket)
 				if error != nil {
 					return false
