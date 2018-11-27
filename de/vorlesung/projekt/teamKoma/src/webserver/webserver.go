@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"storagehandler"
@@ -329,15 +330,33 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	http.Handle("/api/new", adapt(nil, mustParamsWrapper("lName", "fName", "email", "subject", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
 	http.Handle("/api/mail", adapt(func(w http.ResponseWriter, r *http.Request) {
-		mails := st.GetMailsToSend()
-		w.Header().Set("Content-Type", "application/json")
-		jsonbody, err := json.Marshal(mails)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		if r.Method == "POST" {
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			var tickets []storagehandler.Email
+			err = json.Unmarshal(body, tickets)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			done := st.SetSendedMails(tickets)
+			if done != true {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
 		} else {
-			w.Write(jsonbody)
+			mails := st.GetMailsToSend()
+			w.Header().Set("Content-Type", "application/json")
+			jsonbody, err := json.Marshal(mails)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			} else {
+				w.Write(jsonbody)
+			}
 		}
-		//json.NewEncoder(w).Encode(mails)
 	}, basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 
 	portString := ":" + strconv.Itoa(port)
