@@ -11,6 +11,11 @@ import (
 	"strconv"
 )
 
+type DataWrapper interface {
+	area() float64
+	perim() float64
+}
+
 type contextKey string
 
 type adapter func(http.HandlerFunc) http.HandlerFunc
@@ -327,7 +332,14 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	// rest-api
 	// insert ticket via mail
-	http.Handle("/api/new", adapt(nil, mustParamsWrapper("lName", "fName", "email", "subject", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
+	http.Handle("/api/new", adapt(func(w http.ResponseWriter, r *http.Request) {
+		_, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+	}, basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
 	http.Handle("/api/mail", adapt(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
