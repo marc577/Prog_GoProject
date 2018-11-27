@@ -31,9 +31,9 @@ func main() {
 	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
 	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
 
-	createDirIfNotExist(logLoc)
-	createDirIfNotExist(ticketStoreLoc)
-	createDirIfNotExist(htmlLoc)
+	createDirIfNotExist(*logLoc)
+	createDirIfNotExist(*ticketStoreLoc)
+	createDirIfNotExist(*htmlLoc)
 
 	st := storagehandler.New(*userStoreLoc, *ticketStoreLoc)
 
