@@ -96,9 +96,9 @@ func TestTicketHandling(t *testing.T) {
 	}
 
 	// Check if the scope variable has changed after update an itemState to inProcessing
-	var ticketsByProcessorLen = len(*storageHandler.GetOpenTicketsByProcessor(userName))
+	var ticketsByProcessorLen = len(*storageHandler.GetInProgressTicketsByProcessor(userName))
 	testTicket.SetTicketStateInProgress(userName)
-	var newTicketsByProcessorLen = len(*storageHandler.GetOpenTicketsByProcessor(userName))
+	var newTicketsByProcessorLen = len(*storageHandler.GetInProgressTicketsByProcessor(userName))
 	if ticketsByProcessorLen != (newTicketsByProcessorLen - 1) {
 		t.Error("Ticket is not up to date in rom")
 	}
