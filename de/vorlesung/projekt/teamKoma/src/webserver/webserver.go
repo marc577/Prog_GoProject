@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"context"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -92,24 +93,6 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 			} else {
 				w.Header().Set("WWW-Authenticate", "Basic realm=\"KOMA Ticket System\"")
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			}
-		})
-	}
-}
-
-func dataWrapper(key string, f func(s string, r *http.Request) interface{}) adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctxVal := r.Context().Value(contextKey(key))
-			if ctxVal != nil {
-				user := ctxVal.(string)
-				data := f(user, r)
-				ctx := context.WithValue(r.Context(), contextKey("data"), data)
-				if h != nil {
-					h.ServeHTTP(w, r.WithContext(ctx))
-				}
-			} else {
-				http.Error(w, http.StatusText(http.StatusNotFound)+"|"+key, http.StatusNotFound)
 			}
 		})
 	}
@@ -239,14 +222,12 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		return context.WithValue(r.Context(), contextKey("data"), st.GetOpenTickets())
 	}), basicAuthWrapper(auth)))
-	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
-		return st.GetInProgressTicketsByProcessor(s)
+	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		s := r.Context().Value(contextKey("user")).(string)
+		return context.WithValue(r.Context(), contextKey("data"), st.GetInProgressTicketsByProcessor(s))
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
-	// http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
-	// 	return st.GetInProgressTicketsByProcessor(s)
-	// }), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
-		return st.GetTickets()
+	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		return context.WithValue(r.Context(), contextKey("data"), st.GetTickets())
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
 
 	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["added"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
@@ -261,7 +242,8 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("email"), name)
 		return context.WithValue(r.Context(), contextKey("data"), t)
 	}), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
-	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string, r *http.Request) interface{} {
+	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		s := r.Context().Value(contextKey("ticket")).(string)
 		t, err := st.GetTicketByID(s)
 		if r.Method == "POST" {
 			state := r.Form.Get("state")
@@ -282,7 +264,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		if err != nil {
 			return nil
 		}
-		return t
+		return context.WithValue(r.Context(), contextKey("data"), t)
 	}), saveParamsWrapper("ticket"), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 	http.Handle("/edit/add", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		t, er := st.GetTicketByID(r.Form.Get("ticket"))
@@ -346,7 +328,17 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	// insert ticket via mail
 	http.Handle("/api/new", adapt(nil, mustParamsWrapper("lName", "fName", "email", "subject", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
-	http.Handle("/api/mail", adapt(nil, basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
+	http.Handle("/api/mail", adapt(func(w http.ResponseWriter, r *http.Request) {
+		mails := st.GetMailsToSend()
+		w.Header().Set("Content-Type", "application/json")
+		jsonbody, err := json.Marshal(mails)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		} else {
+			w.Write(jsonbody)
+		}
+		//json.NewEncoder(w).Encode(mails)
+	}, basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 
 	portString := ":" + strconv.Itoa(port)
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)

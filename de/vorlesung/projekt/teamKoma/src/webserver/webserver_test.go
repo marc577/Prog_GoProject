@@ -3,6 +3,7 @@ package webserver
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"storagehandler"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +27,10 @@ func setup(handler http.Handler) *storagehandler.StorageHandler {
 	server = httptest.NewServer(handler)
 	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
-func setupSimple(handler http.HandlerFunc) {
+func setupSimple(handler http.Handler) {
+	server = httptest.NewServer(handler)
+}
+func setupSimpleFunc(handler http.HandlerFunc) {
 	server = httptest.NewServer(handler)
 }
 func teardown() {
@@ -43,7 +48,7 @@ func TestMethodsAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo Welt")
 	})
-	setup(adapt(simpleHandler, methodsWrapper("GET")))
+	setupSimple(adapt(simpleHandler, methodsWrapper("GET")))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -56,7 +61,7 @@ func TestMethodsNotAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo Welt")
 	})
-	setup(adapt(simpleHandler, methodsWrapper("GET")))
+	setupSimple(adapt(simpleHandler, methodsWrapper("GET")))
 	defer teardown()
 	res, err := http.Post(server.URL, "", nil)
 	assert.NoError(t, err)
@@ -70,7 +75,7 @@ func TestMustParamsOK(t *testing.T) {
 		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("fname"), req.Form.Get("lname")}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, mustParamsWrapper("fname", "lname")))
+	setupSimple(adapt(simpleHandler, mustParamsWrapper("fname", "lname")))
 	defer teardown()
 	url := strings.Join([]string{server.URL, "fname=Werner"}, "?")
 	res, err := http.Post(url, "application/x-www-form-urlencoded", bytes.NewBufferString("lname=Brenzel"))
@@ -85,7 +90,7 @@ func TestMustParamsNotOK(t *testing.T) {
 		responseString := strings.Join([]string{"Hallo", req.URL.Query().Get("name")}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, mustParamsWrapper("name")))
+	setupSimple(adapt(simpleHandler, mustParamsWrapper("name")))
 	defer teardown()
 	url := strings.Join([]string{server.URL, "greet=Werner"}, "?")
 	res, err := http.Get(url)
@@ -101,7 +106,7 @@ func TestSaveParamsOK(t *testing.T) {
 		responseString := strings.Join([]string{"Hallo", n}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, saveParamsWrapper("name")))
+	setupSimple(adapt(simpleHandler, saveParamsWrapper("name")))
 	defer teardown()
 	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
 	res, err := http.Get(url)
@@ -120,7 +125,7 @@ func TestSaveParamsNotOK(t *testing.T) {
 		responseString := strings.Join([]string{"Hallo", "Werner"}, " ")
 		io.WriteString(w, responseString)
 	})
-	setup(adapt(simpleHandler, saveParamsWrapper("name2")))
+	setupSimple(adapt(simpleHandler, saveParamsWrapper("name2")))
 	defer teardown()
 	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
 	res, err := http.Get(url)
@@ -134,7 +139,7 @@ func TestRedirectWrapper(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo")
 	})
-	setup(adapt(simpleHandler, redirectWrapper("")))
+	setupSimple(adapt(simpleHandler, redirectWrapper("")))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.Error(t, err)
@@ -147,7 +152,7 @@ func TestFunctionCTXWrapper(t *testing.T) {
 		greet := "Hallo " + ctxval.(string)
 		io.WriteString(w, greet)
 	})
-	setup(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+	setupSimple(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		return context.WithValue(r.Context(), contextKey("data"), "Werner")
 	})))
 	defer teardown()
@@ -163,7 +168,7 @@ func TestFunctionCTXWrapperNil(t *testing.T) {
 		ctxval := req.Context().Value(contextKey("data"))
 		assert.Nil(t, ctxval)
 	})
-	setup(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+	setupSimple(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		return nil
 	})))
 	defer teardown()
@@ -179,7 +184,7 @@ func TestServeTemplate(t *testing.T) {
 	})
 	rootPath := "../../html"
 	tmpl := template.Must(defaultOpenT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+	setupSimple(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		return context.WithValue(r.Context(), contextKey("user"), "Werner")
 	})))
 	defer teardown()
@@ -193,7 +198,7 @@ func TestServeTemplate(t *testing.T) {
 func TestServeTemplateFalse(t *testing.T) {
 	rootPath := "../../html"
 	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
-	setup(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
+	setupSimple(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -204,7 +209,7 @@ func TestServeTemplateFalse(t *testing.T) {
 }
 
 func TestBasicAuthWrapperWithoutPW(t *testing.T) {
-	setup(adapt(nil, basicAuthWrapper(nil)))
+	setupSimple(adapt(nil, basicAuthWrapper(nil)))
 	defer teardown()
 	res, err := http.Get(server.URL)
 	assert.NoError(t, err)
@@ -227,7 +232,7 @@ func TestBasicAuthWrapperWithOKPW(t *testing.T) {
 		receivedPW = p
 		return true
 	})
-	setup(adapt(simpleHandler, basicAuthWrapper(auth)))
+	setupSimple(adapt(simpleHandler, basicAuthWrapper(auth)))
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", server.URL, nil)
 	assert.NoError(t, err)
@@ -252,7 +257,7 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 		receivedPW = p
 		return false
 	})
-	setup(adapt(simpleHandler, basicAuthWrapper(auth)))
+	setupSimple(adapt(simpleHandler, basicAuthWrapper(auth)))
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", server.URL, nil)
 	assert.NoError(t, err)
@@ -267,58 +272,22 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 	assert.Equal(t, http.StatusText(http.StatusUnauthorized)+"\n", string(body), "wrong message")
 }
 
-// func TestRedirectWrapper(t *testing.T) {
-// 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		io.WriteString(w, "Hello client\n")
-// 	})
-// 	server.Config.
-// 	setupSimple(adapt(simpleHandler, redirectWrapper("edit")))
-// 	defer teardown()
-// 	res, err := http.Get(server.URL)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, http.StatusPermanentRedirect, res.StatusCode, "wrong status")
-// 	body, err := ioutil.ReadAll(res.Body)
-// 	assert.NoError(t, err)
-// 	assert.NotEqual(t, "Hello client\n", string(body), "not redirectec")
-// }
-
 func TestStart(t *testing.T) {
-	//c := make(chan error, 1)
-	// go func() {
-	// 	//Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")
-	// 	//close(c)
-	// }()
-	//time.Sleep(2 * time.Second)
-	//err := <-c
-	//assert.NoError(t, err)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	url := "https://localhost:8443"
+	st := storagehandler.New("../../storage/users.json", "../../storage/tickets/")
+	go func() {
+		serr := Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html", st)
+		assert.NoError(t, serr)
+	}()
+	time.Sleep(2 * time.Second)
+	client := &http.Client{Transport: transCfg}
+	req, err := http.NewRequest("GET", url+"/open", nil)
+	req.SetBasicAuth("Werner", "password")
+	res, err := client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
 }
-
-// func TestHealthCheckHandler(t *testing.T) {
-// 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
-// 	// pass 'nil' as the third parameter.
-// 	req, err := http.NewRequest("GET", "/health-check", nil)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
-// 	rr := httptest.NewRecorder()
-// 	handler := http.HandlerFunc(HealthCheckHandler)
-
-// 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-// 	// directly and pass in our Request and ResponseRecorder.
-// 	handler.ServeHTTP(rr, req)
-
-// 	// Check the status code is what we expect.
-// 	if status := rr.Code; status != http.StatusOK {
-// 		t.Errorf("handler returned wrong status code: got %v want %v",
-// 			status, http.StatusOK)
-// 	}
-
-// 	// Check the response body is what we expect.
-// 	expected := `{"alive": true}`
-// 	if rr.Body.String() != expected {
-// 		t.Errorf("handler returned unexpected body: got %v want %v",
-// 			rr.Body.String(), expected)
-// 	}
-// }
