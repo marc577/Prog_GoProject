@@ -63,7 +63,7 @@ func main() {
 	for cmd != "1" || cmd != "exit" {
 		switch cmd {
 		case "1":
-			var []Ticket:=grabMailsToSend(*host, *port, *user, *pass)
+			//			var []Ticket:=grabMailsToSend(*host, *port, *user, *pass)
 		case "exit":
 			os.Exit(0)
 		default:

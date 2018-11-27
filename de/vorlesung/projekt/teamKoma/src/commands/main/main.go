@@ -52,7 +52,7 @@ func createDirIfNotExist(dir string) (success bool) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
 			success = false
-			logging.Error.Panic("Could not create Folder"+dir+": ", err)
+			logging.Error.Fatal("Could not create Folder "+dir+": ", err)
 			return success
 		}
 		success = true
