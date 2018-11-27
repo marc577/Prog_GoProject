@@ -156,7 +156,7 @@ func storeTicket(storageHandler *StorageHandler, subject string, text string, em
 	currentTime := time.Now()
 	//ticketID := string(currentTime.Format("20060102150405")) + "_" + email
 	ticketID := createTicketID(currentTime, email, name)
-	item := TicketItem{currentTime, name, text, false, false, ""}
+	item := TicketItem{currentTime, name, text, false, false, email}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
 	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, name}
