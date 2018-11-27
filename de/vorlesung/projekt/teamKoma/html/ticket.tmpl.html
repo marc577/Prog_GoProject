@@ -89,7 +89,9 @@
                         <li class="list-group-item">
                             <label><strong>{{.CreationDate.Format "02 Jan 2006  15:04"}}</strong></label>
                             <p>{{.Text}}</p>
-                            <label style="background-color:lightgrey;">[Name vom ersteller]</label>&nbsp;&nbsp;
+                            {{ if .Creator }}
+                            <label style="background-color:lightgrey;">{{.Creator}}</label>&nbsp;&nbsp;
+                            {{ end }}
                             <label style="background-color:#007bff;">{{.Email}}</label>
                         </li>
                         {{end}}{{end}}

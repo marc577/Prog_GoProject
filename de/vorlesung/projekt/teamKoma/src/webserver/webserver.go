@@ -214,7 +214,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			if p == "" {
 				return &[]storagehandler.Ticket{}
 			}
-			return st.GetNotClosedTicketsByProcessor(p)
+			return st.GetInProgressTicketsByProcessor(p)
 		},
 	})
 
@@ -240,7 +240,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		return st.GetOpenTickets()
 	}), basicAuthWrapper(auth)))
 	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
-		return st.GetNotClosedTicketsByProcessor(s)
+		return st.GetInProgressTicketsByProcessor(s)
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
 	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetTickets()
@@ -283,7 +283,22 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	}), saveParamsWrapper("ticket"), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 	http.Handle("/edit/add", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
 		//TODO: add entry to ticket (perhaps inform kunde)
-
+		t, er := st.GetTicketByID(r.Form.Get("ticket"))
+		if er != nil {
+			http.NotFound(w, r)
+			return nil
+		}
+		ctxVal := r.Context().Value(contextKey("user"))
+		if ctxVal != nil {
+			user := ctxVal.(string)
+			t, er = t.AddEntry2Ticket(user, r.Form.Get("email"), r.Form.Get("description"))
+			if er != nil {
+				http.NotFound(w, r)
+			} else {
+				url := "https://" + r.Host + "/edit?ticket=" + t.ID
+				http.Redirect(w, r, url, http.StatusFound)
+			}
+		}
 		return nil
 	}), mustParamsWrapper("ticket", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	http.Handle("/edit/free", adapt(nil, redirectWrapper("/assigned"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
