@@ -337,7 +337,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 				return
 			}
 			var tickets []storagehandler.Email
-			err = json.Unmarshal(body, tickets)
+			err = json.Unmarshal(body, &tickets)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
