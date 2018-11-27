@@ -32,10 +32,9 @@ type TicketItem struct {
 	Creator      string    `json:"creator"`
 	Text         string    `json:"text"`
 	// Mail infos
-	IsToSend  bool   `json:"isToSend"`
-	IsSended  bool   `json:"isSended"`
-	EmailTo   string `json:"emailTo"`
-	EmailText string `json:"emailText"`
+	IsToSend bool   `json:"isToSend"`
+	IsSended bool   `json:"isSended"`
+	EmailTo  string `json:"emailTo"`
 }
 
 // Ticket represents a ticket
@@ -87,9 +86,9 @@ func (ticket Ticket) SetTicketStateClosed() (Ticket, error) {
 }
 
 // AddEntry2Ticket adds an entry to the given ticket
-func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string, emailText string) (Ticket, error) {
+func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string) (Ticket, error) {
 	currTime := time.Now()
-	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo, emailText}
+	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo}
 	return ticket.storageHandler.UpdateTicket(ticket)
 }
 
@@ -157,7 +156,7 @@ func storeTicket(storageHandler *StorageHandler, subject string, text string, em
 	currentTime := time.Now()
 	//ticketID := string(currentTime.Format("20060102150405")) + "_" + email
 	ticketID := createTicketID(currentTime, email, name)
-	item := TicketItem{currentTime, name, text, false, false, "", ""}
+	item := TicketItem{currentTime, name, text, false, false, ""}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
 	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, name}

@@ -20,11 +20,11 @@ func TestTicketItems(t *testing.T) {
 	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
 	var testTicket, _ = storageHandler.CreateTicket("TestSubject", "First Entry", "TestMail", "TestName")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestCreator", "second entry", false, "TestEmailTo", "TestEmailText")
+	testTicket.AddEntry2Ticket("TestCreator", "second entry", false, "TestEmailTo")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestCreator", "third Entry", false, "TestMailTo", "TestEmailText")
+	testTicket.AddEntry2Ticket("TestCreator", "third Entry", false, "TestMailTo")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestCreator", "last entry", false, "TestEmailTo", "TestEmailText")
+	testTicket.AddEntry2Ticket("TestCreator", "last entry", false, "TestEmailTo")
 	time.Sleep(1 * time.Second)
 	ticketEntry, error := testTicket.GetLastEntryOfTicket()
 	if error != nil {
@@ -108,7 +108,7 @@ func TestTicketHandling(t *testing.T) {
 	}
 
 	var ticketEntryLen = len(testTicket.Items)
-	testTicket.AddEntry2Ticket("TestCreator", "An entry", false, "TestEmailTo", "TestEmailText")
+	testTicket.AddEntry2Ticket("TestCreator", "An entry", false, "TestEmailTo")
 	var newTicketEntryLen = len(testTicket.Items)
 	if ticketEntryLen != newTicketEntryLen-1 {
 		t.Error("Error while adding ticket entry to testticket")
