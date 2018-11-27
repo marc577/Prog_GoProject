@@ -27,10 +27,15 @@ const (
 
 // TicketItem represents an entry of a ticket
 type TicketItem struct {
+	// TicketItem infos
 	CreationDate time.Time `json:"creationDate"`
 	Creator      string    `json:"creator"`
-	Email        string    `json:"email"`
 	Text         string    `json:"text"`
+	// Mail infos
+	IsToSend  bool   `json:"isToSend"`
+	IsSended  bool   `json:"isSended"`
+	EmailTo   string `json:"emailTo"`
+	EmailText string `json:"emailText"`
 }
 
 // Ticket represents a ticket
@@ -41,14 +46,15 @@ type Ticket struct {
 	TicketState    TicketState              `json:"ticketState"`
 	Processor      string                   `json:"processor"`
 	Items          map[time.Time]TicketItem `json:"items"`
-	Email          string                   `json:"email"`
-	FirstName      string                   `json:"firstName"`
-	LastName       string                   `json:"lastName"`
+	// mail of ticket creator
+	Email string `json:"email"`
+	// Name of ticket creator
+	Name string `json:"name"`
 }
 
 // createTicketID create an id by hashing the given values
-func createTicketID(currentTime time.Time, email string, FirstName string, LastName string) string {
-	var id2hash = string(currentTime.Format("20060102150405")) + email + FirstName + LastName
+func createTicketID(currentTime time.Time, email string, name string) string {
+	var id2hash = string(currentTime.Format("20060102150405")) + email + name
 	h := sha1.New()
 	h.Write([]byte(id2hash))
 	return hex.EncodeToString(h.Sum(nil))
@@ -83,9 +89,9 @@ func (ticket Ticket) SetTicketStateClosed() (Ticket, error) {
 }
 
 // AddEntry2Ticket adds an entry to the given ticket
-func (ticket Ticket) AddEntry2Ticket(creator string, email string, text string) (Ticket, error) {
+func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string, emailText string) (Ticket, error) {
 	currTime := time.Now()
-	ticket.Items[currTime] = TicketItem{currTime, creator, email, text}
+	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo, emailText}
 	return ticket.storageHandler.UpdateTicket(ticket)
 }
 
@@ -149,13 +155,13 @@ func (ticket Ticket) writeTicketToMemory() (Ticket, error) {
 }
 
 // storeTicket writes a new json-File to the memory with in a ticket
-func storeTicket(storageHandler *StorageHandler, subject string, text string, email string, firstName string, lastName string) (Ticket, error) {
+func storeTicket(storageHandler *StorageHandler, subject string, text string, email string, name string) (Ticket, error) {
 	currentTime := time.Now()
 	//ticketID := string(currentTime.Format("20060102150405")) + "_" + email
-	ticketID := createTicketID(currentTime, email, firstName, lastName)
-	item := TicketItem{currentTime, firstName + " " + lastName, email, text}
+	ticketID := createTicketID(currentTime, email, name)
+	item := TicketItem{currentTime, name, text, false, false, "", ""}
 	mItems := make(map[time.Time]TicketItem)
 	mItems[currentTime] = item
-	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, email, firstName, lastName}
+	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, email, name}
 	return newTicket.writeTicketToMemory()
 }

@@ -16,15 +16,15 @@ var userPassword = "SuperPasswort"
 ** TICKET TEST FUNCTIONS
 ************************************ */
 
-func TestSandBox(t *testing.T) {
+func TestTicketItems(t *testing.T) {
 	var storageHandler = New(testUserStorageFile, testTicketStorageDir)
-	var testTicket, _ = storageHandler.CreateTicket("TestSubject", "First Entry", "TestMail", "TestFirstName", "TestLastName")
+	var testTicket, _ = storageHandler.CreateTicket("TestSubject", "First Entry", "TestMail", "TestName")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Second Entry")
+	testTicket.AddEntry2Ticket("TestCreator", "second entry", false, "TestEmailTo", "TestEmailText")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Third Entry")
+	testTicket.AddEntry2Ticket("TestCreator", "third Entry", false, "TestMailTo", "TestEmailText")
 	time.Sleep(1 * time.Second)
-	testTicket.AddEntry2Ticket("TestMail", "TestCreator", "Last Entry")
+	testTicket.AddEntry2Ticket("TestCreator", "last entry", false, "TestEmailTo", "TestEmailText")
 	time.Sleep(1 * time.Second)
 	ticketEntry, error := testTicket.GetLastEntryOfTicket()
 	if error != nil {
@@ -51,7 +51,7 @@ func TestTicketHandling(t *testing.T) {
 	var originLen = len(allTickets)
 
 	// Check if the subject is correct after creation
-	var testTicket, errCreateTicket = storageHandler.CreateTicket("TestSubject", "TestText", "TestMail", "TestFirstName", "TestLastName")
+	var testTicket, errCreateTicket = storageHandler.CreateTicket("TestSubject", "TestText", "TestMail", "TestName")
 	if testTicket.Subject != "TestSubject" && errCreateTicket != nil {
 		t.Error("Ticket subject is wrong")
 	}
@@ -108,7 +108,7 @@ func TestTicketHandling(t *testing.T) {
 	}
 
 	var ticketEntryLen = len(testTicket.Items)
-	testTicket.AddEntry2Ticket("testmail", "TestCreator", "testText")
+	testTicket.AddEntry2Ticket("TestCreator", "An entry", false, "TestEmailTo", "TestEmailText")
 	var newTicketEntryLen = len(testTicket.Items)
 	if ticketEntryLen != newTicketEntryLen-1 {
 		t.Error("Error while adding ticket entry to testticket")

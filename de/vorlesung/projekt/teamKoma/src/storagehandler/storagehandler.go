@@ -81,8 +81,8 @@ func (handler *StorageHandler) UpdateTicket(ticket Ticket) (Ticket, error) {
 
 // CreateTicket creates a new ticket on persistant storage and rom
 // Returns the created Ticket
-func (handler *StorageHandler) CreateTicket(subject string, text string, firstName string, email string, lastName string) (Ticket, error) {
-	var ticket, error = storeTicket(handler, subject, text, email, firstName, lastName)
+func (handler *StorageHandler) CreateTicket(subject string, text string, email string, name string) (Ticket, error) {
+	var ticket, error = storeTicket(handler, subject, text, email, name)
 	handler.tickets = append(handler.tickets, ticket)
 	return ticket, error
 }
