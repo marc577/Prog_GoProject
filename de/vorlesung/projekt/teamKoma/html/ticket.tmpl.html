@@ -11,7 +11,7 @@
         <tbody>
             <tr>
                 <td>Creator:</td>
-                <td>{{.Data.FirstName}} {{.Data.LastName}}</td>
+                <td>{{.Data.Name}}</td>
             </tr>
             <tr>
                 <td>Subject:</td>
@@ -71,8 +71,8 @@
                         <textarea name="description" style="width:100%;" rows="5" required></textarea>
                         <div class="input-group">
                             <input type="submit" name="type" class="btn btn-secondary" value="Save">
-                            <input type="text" name="email" class="form-control" style="text-align:right;" value="{{.Data.GetLastEntryOfTicket.Email}}">
-                            <input type="submit" name="type" class="btn btn-primary" value="Save & Inform">
+                            <input type="text" name="email" class="form-control" style="text-align:right;" value="{{.Data.GetLastEntryOfTicket.EmailTo}}">
+                            <input type="submit" name="type" class="btn btn-primary" value="Inform">
                         </div>
                     </form>
                 </td>
@@ -92,7 +92,12 @@
                             {{ if .Creator }}
                             <label style="background-color:lightgrey;">{{.Creator}}</label>&nbsp;&nbsp;
                             {{ end }}
-                            <label style="background-color:#007bff;">{{.Email}}</label>
+                            {{ if .IsToSend}}
+                            <label style="background-color:#007bff;">ToSend: {{.EmailTo}}</label>
+                            {{ if .IsSended}}
+                            <label>&nbsp;&#10004;</label>
+                            {{ end }}
+                            {{ end }}
                         </li>
                         {{end}}{{end}}
                     </ul>

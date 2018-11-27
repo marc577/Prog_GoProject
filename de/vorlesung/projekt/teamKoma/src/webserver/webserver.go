@@ -236,12 +236,15 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	auth := AuthenticatorFunc(st.VerifyUser)
 
 	// frontend
-	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
-		return st.GetOpenTickets()
+	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		return context.WithValue(r.Context(), contextKey("data"), st.GetOpenTickets())
 	}), basicAuthWrapper(auth)))
 	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetInProgressTicketsByProcessor(s)
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
+	// http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
+	// 	return st.GetInProgressTicketsByProcessor(s)
+	// }), basicAuthWrapper(auth), methodsWrapper("GET")))
 	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
 		return st.GetTickets()
 	}), basicAuthWrapper(auth), methodsWrapper("GET")))
@@ -254,12 +257,12 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			http.Error(w, http.StatusText(http.StatusNotFound)+"|email", http.StatusNotFound)
 			return nil
 		}
-		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("fName"), r.Form.Get("email"), r.Form.Get("lName"))
+		name := r.Form.Get("fName") + " " + r.Form.Get("lName")
+		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("email"), name)
 		return context.WithValue(r.Context(), contextKey("data"), t)
 	}), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
 	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string, r *http.Request) interface{} {
 		t, err := st.GetTicketByID(s)
-
 		if r.Method == "POST" {
 			state := r.Form.Get("state")
 			switch state {
@@ -282,7 +285,6 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		return t
 	}), saveParamsWrapper("ticket"), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
 	http.Handle("/edit/add", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
-		//TODO: add entry to ticket (perhaps inform kunde)
 		t, er := st.GetTicketByID(r.Form.Get("ticket"))
 		if er != nil {
 			http.NotFound(w, r)
@@ -291,7 +293,16 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		ctxVal := r.Context().Value(contextKey("user"))
 		if ctxVal != nil {
 			user := ctxVal.(string)
-			t, er = t.AddEntry2Ticket(user, r.Form.Get("email"), r.Form.Get("description"))
+			isToSend := false
+			toMail := r.Form.Get("email")
+			if r.Form.Get("type") == "Inform" {
+				isToSend = true
+				if verifyEMail(toMail) != true {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return nil
+				}
+			}
+			t, er = t.AddEntry2Ticket(user, r.Form.Get("description"), isToSend, toMail)
 			if er != nil {
 				http.NotFound(w, r)
 			} else {

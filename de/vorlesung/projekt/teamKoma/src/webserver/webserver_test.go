@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"bytes"
+	"context"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -16,13 +17,13 @@ import (
 
 var server *httptest.Server
 
-func setupFunc(handler http.HandlerFunc) {
-	storagehandler.Init("../../storage/users.json", "../../storage/tickets")
+func setupFunc(handler http.HandlerFunc) *storagehandler.StorageHandler {
 	server = httptest.NewServer(http.HandlerFunc(handler))
+	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
-func setup(handler http.Handler) {
-	storagehandler.Init("../../storage/users.json", "../../storage/tickets")
+func setup(handler http.Handler) *storagehandler.StorageHandler {
 	server = httptest.NewServer(handler)
+	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
 func setupSimple(handler http.HandlerFunc) {
 	server = httptest.NewServer(handler)
@@ -31,34 +32,13 @@ func teardown() {
 	server.Close()
 }
 
-func TestServeTemplate(t *testing.T) {
-	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(200)
-	})
-	rootPath := "../../html"
-	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
-	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), dataWrapperAll()))
-	defer teardown()
-	res, err := http.Get(server.URL)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
-	body, err := ioutil.ReadAll(res.Body)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, body)
+func TestVerifyMail(t *testing.T) {
+	assert.True(t, verifyEMail("ale@kale"))
+	assert.True(t, verifyEMail("ale@kale.de"))
+	assert.False(t, verifyEMail("ale@k!.--slale.de"))
+	assert.False(t, verifyEMail("ale.--slale.de"))
+	assert.False(t, verifyEMail("HalloWelt"))
 }
-func TestServeTemplateFalse(t *testing.T) {
-	rootPath := "../../html"
-	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
-	setup(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
-	defer teardown()
-	res, err := http.Get(server.URL)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Wrong HTTP Status")
-	body, err := ioutil.ReadAll(res.Body)
-	assert.NoError(t, err)
-	assert.Empty(t, body)
-}
-
 func TestMethodsAllow(t *testing.T) {
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hallo Welt")
@@ -114,6 +94,113 @@ func TestMustParamsNotOK(t *testing.T) {
 	body, err := ioutil.ReadAll(res.Body)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "Hallo Werner", string(body))
+}
+func TestSaveParamsOK(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		n := req.Context().Value(contextKey("name")).(string)
+		responseString := strings.Join([]string{"Hallo", n}, " ")
+		io.WriteString(w, responseString)
+	})
+	setup(adapt(simpleHandler, saveParamsWrapper("name")))
+	defer teardown()
+	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
+	res, err := http.Get(url)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hallo Werner", string(body))
+}
+func TestSaveParamsNotOK(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		n := req.Context().Value(contextKey("name"))
+		if n == nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+		responseString := strings.Join([]string{"Hallo", "Werner"}, " ")
+		io.WriteString(w, responseString)
+	})
+	setup(adapt(simpleHandler, saveParamsWrapper("name2")))
+	defer teardown()
+	url := strings.Join([]string{server.URL, "name=Werner"}, "?")
+	res, err := http.Get(url)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "Hallo Werner", string(body))
+}
+func TestRedirectWrapper(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		io.WriteString(w, "Hallo")
+	})
+	setup(adapt(simpleHandler, redirectWrapper("")))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+func TestFunctionCTXWrapper(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctxval := req.Context().Value(contextKey("data"))
+		assert.NotNil(t, ctxval)
+		greet := "Hallo " + ctxval.(string)
+		io.WriteString(w, greet)
+	})
+	setup(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		return context.WithValue(r.Context(), contextKey("data"), "Werner")
+	})))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hallo Werner", string(body))
+}
+func TestFunctionCTXWrapperNil(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctxval := req.Context().Value(contextKey("data"))
+		assert.Nil(t, ctxval)
+	})
+	setup(adapt(simpleHandler, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		return nil
+	})))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+func TestServeTemplate(t *testing.T) {
+	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	})
+	defaultOpenT := template.New("").Funcs(map[string]interface{}{
+		"getUser": func() string { return "" },
+	})
+	rootPath := "../../html"
+	tmpl := template.Must(defaultOpenT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	setup(adapt(simpleHandler, serveTemplateWrapper(tmpl, "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		return context.WithValue(r.Context(), contextKey("user"), "Werner")
+	})))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Wrong HTTP Status")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, body)
+}
+func TestServeTemplateFalse(t *testing.T) {
+	rootPath := "../../html"
+	tmpl := template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
+	setup(adapt(nil, serveTemplateWrapper(tmpl, "layout2", nil)))
+	defer teardown()
+	res, err := http.Get(server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Wrong HTTP Status")
+	body, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+	assert.Empty(t, body)
 }
 
 func TestBasicAuthWrapperWithoutPW(t *testing.T) {
@@ -197,10 +284,10 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	//c := make(chan error, 1)
-	go func() {
-		Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")
-		//close(c)
-	}()
+	// go func() {
+	// 	//Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html")
+	// 	//close(c)
+	// }()
 	//time.Sleep(2 * time.Second)
 	//err := <-c
 	//assert.NoError(t, err)
