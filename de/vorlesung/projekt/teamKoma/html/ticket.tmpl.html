@@ -1,3 +1,101 @@
 {{define "content"}}
-    <h4>Ticket Detatil Page</h4>
+    <h4>Welcome {{ .User }}</h4>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary w-100">
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <h6 class="navbar-brand" style="margin-bottom:0px">{{ .Data.ID}}</h6>
+        </div>
+        <a type="button" class="btn btn-default navbar-btn pull-right" href="./open">Admin Panel</a>
+      </nav>
+      <br>
+    <table class="table">
+        <tbody>
+            <tr>
+                <td>Creator:</td>
+                <td>{{.Data.FirstName}} {{.Data.LastName}}</td>
+            </tr>
+            <tr>
+                <td>Subject:</td>
+                <td>{{.Data.Subject}}</td>
+            </tr>
+            <tr>
+                <td>Description:</td>
+                <td>{{.Data.GetFirstEntryOfTicket.Text }}</td>
+            </tr>
+                <tr style="background-color:lightgrey;">
+                    <form action="./edit?ticket={{.Data.ID}}" method="POST">
+                    <td>
+                        <label for="state">State:</label>
+                        <select name="state">
+                            <option value="0" {{if eq .Data.TicketState 0}} selected="selected" {{end}}>Open</option>
+                            <option value="1" {{if eq .Data.TicketState 1}} selected="selected" {{end}}>In Progress</option>
+                            <option value="2" {{if eq .Data.TicketState 2}} selected="selected" {{end}}>Closed</option>
+                        </select>
+                    </td>
+                    <td>
+                        <label for="processor">Processor:</label>
+                        <select name="processor" {{if eq .Data.TicketState 2}} disabled {{end}}>
+                                {{ $holidayFree := getNonHolydaier }}
+                                {{ range $holidayFree }}
+                                {{ if ne $.Data.Processor .Name}}
+                                <option value="{{.Name}}">{{.Name}}</option>
+                                {{ end }}
+                                {{ end }}
+                                <option selected value="{{ .Data.Processor }}" >{{ .Data.Processor }}</option>
+                        </select>
+                        <input type="submit" name="type" class="btn btn-primary" style="float: right;" value="Save">
+                    </td>
+                    </form>
+                </tr>
+                {{if ne .Data.Processor ""}}
+                <tr>
+                    <form action="./edit/combine?ticket={{.Data.ID}}" method="post">
+                        <td>Add this ticket {{.Data.ID}} to</td>
+                        <td>
+                            {{$tWithSame := getTsWithSameP .Data.Processor}}
+                            <select name="toticket">
+                                {{ range $tWithSame }}
+                                {{ if ne $.Data.ID .ID}}
+                                <option value="{{.ID}}" >{{.Subject}} - {{.ID}}</option>
+                                {{ end }}
+                                {{ end }}
+                            </select>
+                            <input type="submit" class="btn btn-secondary" style="float: right;" value="Combine">
+                        </td>
+                    </form>
+                </tr>
+                {{ end }}
+            <tr>
+                <td colspan="2">
+                    <form action="./edit/add?ticket={{.Data.ID}}" method="POST">
+                        <h6>New Entry:</h6>
+                        <textarea name="description" style="width:100%;" rows="5" required></textarea>
+                        <div class="input-group">
+                            <input type="submit" name="type" class="btn btn-secondary" value="Save">
+                            <input type="text" name="email" class="form-control" style="text-align:right;" value="{{.Data.GetLastEntryOfTicket.Email}}">
+                            <input type="submit" name="type" class="btn btn-primary" value="Save & Inform">
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Entries:
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <ul class="list-group">
+                        {{if .Data.Items}}{{ range .Data.Items}}
+                        <li class="list-group-item">
+                            <label><strong>{{.CreationDate.Format "02 Jan 2006  15:04"}}</strong></label>
+                            <p>{{.Text}}</p>
+                            <label style="background-color:lightgrey;">[Name vom ersteller]</label>&nbsp;&nbsp;
+                            <label style="background-color:#007bff;">{{.Email}}</label>
+                        </li>
+                        {{end}}{{end}}
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 {{end}}

@@ -54,65 +54,31 @@ func mustParamsWrapper(params ...string) adapter {
 	}
 }
 
-func newTicketWrapper() adapter {
+func saveParamsWrapper(params ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.PostForm == nil {
-				r.ParseForm()
-			}
-			if verifyEMail(r.Form.Get("email")) != true {
-				http.Error(w, http.StatusText(http.StatusNotFound)+"|email", http.StatusNotFound)
-			} else {
-				t := storagehandler.CreateTicket(r.Form.Get("subject"), r.Form.Get("email"), r.Form.Get("description"))
-				if h != nil {
-					ctx := context.WithValue(r.Context(), contextKey("data"), t)
-					h.ServeHTTP(w, r.WithContext(ctx))
+			r.ParseForm()
+			ctx := r.Context()
+			for _, param := range params {
+				if len(r.Form.Get(param)) != 0 {
+					ctx = context.WithValue(ctx, contextKey(param), r.Form.Get(param))
 				}
 			}
-		})
-	}
-}
-func assignTicketWrapper() adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.PostForm == nil {
-				r.ParseForm()
+			if h != nil {
+				h.ServeHTTP(w, r.WithContext(ctx))
 			}
-			userid := r.Form.Get("user")
-			ticketid := r.Form.Get("ticket")
-			ticket, err := storagehandler.GetTicket(ticketid)
-			if err == nil {
-				ticket.SetTicketStateInProgress(userid)
-				if h != nil {
-					h.ServeHTTP(w, r)
-				}
-			} else {
-				http.Error(w, http.StatusText(http.StatusNotFound)+"|ticket", http.StatusNotFound)
-			}
-		})
-	}
-}
-func redirectWrapper(path string) adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			url := "https://" + r.Host + path
-			http.Redirect(w, r, url, http.StatusPermanentRedirect)
 		})
 	}
 }
 
-// func adaptFuncWrapper(f http.HandlerFunc) adapter {
-// 	return func(h http.HandlerFunc) http.HandlerFunc {
-// 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 			if f != nil {
-// 				f.ServeHTTP(w, r)
-// 			}
-// 			if h != nil {
-// 				h.ServeHTTP(w, r)
-// 			}
-// 		})
-// 	}
-// }
+func redirectWrapper(path string) adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			url := "https://" + r.Host + path
+			http.Redirect(w, r, url, http.StatusFound)
+		})
+	}
+}
 
 func basicAuthWrapper(authenticator Authenticator) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
@@ -131,70 +97,53 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
-type webContext struct {
-	Data interface{}
-	Path string
-	User interface{}
-}
-
-func dataWrapperOne() adapter {
+func dataWrapper(key string, f func(s string, r *http.Request) interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tID := r.URL.Query().Get("ticket")
-			ticket, err := storagehandler.GetTicket(tID)
-			if err != nil {
-				http.Error(w, http.StatusText(http.StatusNotFound)+"|ticket", http.StatusNotFound)
-				return
-			}
-			ctx := context.WithValue(r.Context(), contextKey("data"), ticket)
-			if h != nil {
-				h.ServeHTTP(w, r.WithContext(ctx))
-			}
-		})
-	}
-}
-func dataWrapperAll() adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), contextKey("data"), storagehandler.GetTicketsPointer())
-			if h != nil {
-				h.ServeHTTP(w, r.WithContext(ctx))
-			}
-		})
-	}
-}
-func dataWrapperOpen() adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), contextKey("data"), storagehandler.GetOpenTickets())
-			if h != nil {
-				h.ServeHTTP(w, r.WithContext(ctx))
-			}
-		})
-	}
-}
-func dataWrapperAssigned() adapter {
-	return func(h http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctxVal := r.Context().Value(contextKey("user"))
+			ctxVal := r.Context().Value(contextKey(key))
 			if ctxVal != nil {
 				user := ctxVal.(string)
-				ctx := context.WithValue(r.Context(), contextKey("data"), storagehandler.GetNotClosedTicketsByProcessor(user))
+				data := f(user, r)
+				ctx := context.WithValue(r.Context(), contextKey("data"), data)
 				if h != nil {
 					h.ServeHTTP(w, r.WithContext(ctx))
+				}
+			} else {
+				http.Error(w, http.StatusText(http.StatusNotFound)+"|"+key, http.StatusNotFound)
+			}
+		})
+	}
+}
+
+func functionCtxWrapper(f func(w http.ResponseWriter, r *http.Request) context.Context) adapter {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := f(w, r)
+			if h != nil {
+				if ctx != nil {
+					h.ServeHTTP(w, r.WithContext(ctx))
+				} else {
+					h.ServeHTTP(w, r)
 				}
 			}
 		})
 	}
 }
 
+type webContext struct {
+	Data interface{}
+	Path string
+	User interface{}
+}
+
 func serveTemplateWrapper(t *template.Template, name string, data interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if data == nil {
+			d := data
+			if d == nil {
 				ctxKey := contextKey("data")
 				ctxVal := r.Context().Value(ctxKey)
-				data = ctxVal
+				d = ctxVal
 			}
 			user := ""
 			ctxVal := r.Context().Value(contextKey("user"))
@@ -206,7 +155,7 @@ func serveTemplateWrapper(t *template.Template, name string, data interface{}) a
 				"getUser": func() string { return string(user) },
 			})
 			path := r.URL.Path
-			web := webContext{data, path, user}
+			web := webContext{d, path, user}
 			err := t.ExecuteTemplate(w, name, web)
 			if err != nil {
 				w.WriteHeader(500)
@@ -246,14 +195,28 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 // parameters, registers the urls and sets the Authenticator
 // function to the VerifyUser function
 // from the storagehandler packet
-func Start(port int, serverCertPath string, serverKeyPath string, rootPath string) error {
+func Start(port int, serverCertPath string, serverKeyPath string, rootPath string, st *storagehandler.StorageHandler) error {
 
 	htmlRoot := rootPath
-
-	defaultOpenTicketFuncs := map[string]interface{}{
+	defaultOpenT := template.New("").Funcs(map[string]interface{}{
 		"getUser": func() string { return "" },
-	}
-	defaultOpenT := template.New("").Funcs(defaultOpenTicketFuncs)
+	})
+	defaultEditT := template.New("").Funcs(map[string]interface{}{
+		"getUser": func() string { return "" },
+		"getAllTByProcessor": func() []string {
+			return []string{"Werner"}
+		},
+		"getNonHolydaier": func() *[]storagehandler.User {
+			user := st.GetAvailableUsers()
+			return user
+		},
+		"getTsWithSameP": func(p string) *[]storagehandler.Ticket {
+			if p == "" {
+				return &[]storagehandler.Ticket{}
+			}
+			return st.GetNotClosedTicketsByProcessor(p)
+		},
+	})
 
 	// static files
 	staticFilePath := htmlRoot + "/" + "assets"
@@ -268,17 +231,89 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls["assigned"] = template.Must(template.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["all"] = template.Must(template.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["edit"] = template.Must(template.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["edit"] = template.Must(defaultEditT.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
 
-	auth := AuthenticatorFunc(storagehandler.VerifyUser)
+	auth := AuthenticatorFunc(st.VerifyUser)
 
 	// frontend
-	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), dataWrapperOpen(), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapperAssigned(), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapperAll(), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["added"], "layout", nil), newTicketWrapper(), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
-	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapperOne(), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
-	http.Handle("/assign", adapt(nil, redirectWrapper("/open"), assignTicketWrapper(), mustParamsWrapper("user", "ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
+	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
+		return st.GetOpenTickets()
+	}), basicAuthWrapper(auth)))
+	http.Handle("/assigned", adapt(nil, serveTemplateWrapper(tmpls["assigned"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
+		return st.GetNotClosedTicketsByProcessor(s)
+	}), basicAuthWrapper(auth), methodsWrapper("GET")))
+	http.Handle("/all", adapt(nil, serveTemplateWrapper(tmpls["all"], "layout", nil), dataWrapper("user", func(s string, r *http.Request) interface{} {
+		return st.GetTickets()
+	}), basicAuthWrapper(auth), methodsWrapper("GET")))
+
+	http.Handle("/new", adapt(nil, serveTemplateWrapper(tmpls["added"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		if r.PostForm == nil {
+			r.ParseForm()
+		}
+		if verifyEMail(r.Form.Get("email")) != true {
+			http.Error(w, http.StatusText(http.StatusNotFound)+"|email", http.StatusNotFound)
+			return nil
+		}
+		t, _ := st.CreateTicket(r.Form.Get("subject"), r.Form.Get("description"), r.Form.Get("fName"), r.Form.Get("email"), r.Form.Get("lName"))
+		return context.WithValue(r.Context(), contextKey("data"), t)
+	}), mustParamsWrapper("lName", "fName", "email", "subject", "description"), methodsWrapper("POST")))
+	http.Handle("/edit", adapt(nil, serveTemplateWrapper(tmpls["edit"], "layout", nil), dataWrapper("ticket", func(s string, r *http.Request) interface{} {
+		t, err := st.GetTicketByID(s)
+
+		if r.Method == "POST" {
+			state := r.Form.Get("state")
+			switch state {
+			case "0":
+				t, err = t.SetTicketStateOpen()
+			case "1":
+				tp := r.Form.Get("processor")
+				if tp == "" {
+					break
+				}
+				t, err = t.SetTicketStateInProgress(tp)
+			case "2":
+				t, err = t.SetTicketStateClosed()
+			}
+		}
+
+		if err != nil {
+			return nil
+		}
+		return t
+	}), saveParamsWrapper("ticket"), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
+	http.Handle("/edit/add", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		//TODO: add entry to ticket (perhaps inform kunde)
+
+		return nil
+	}), mustParamsWrapper("ticket", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
+	http.Handle("/edit/free", adapt(nil, redirectWrapper("/assigned"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		t, er := st.GetTicketByID(r.Form.Get("ticket"))
+		if er != nil {
+			http.NotFound(w, r)
+		}
+		_, er = t.SetTicketStateOpen()
+		if er != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return nil
+	}), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
+
+	http.Handle("/edit/combine", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		//TODO: combine ticket ticket and ticket toticket and redirect to the new ticket
+		return nil
+	}), mustParamsWrapper("ticket", "toticket"), basicAuthWrapper(auth), methodsWrapper("POST")))
+
+	http.Handle("/assign", adapt(nil, redirectWrapper("/open"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+		r.ParseForm()
+		userid := r.Form.Get("user")
+		ticketid := r.Form.Get("ticket")
+		ticket, err := st.GetTicketByID(ticketid)
+		if err == nil {
+			ticket.SetTicketStateInProgress(userid)
+		}
+		return nil
+	}), mustParamsWrapper("user", "ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
+
 	http.Handle("/", adapt(nil, serveTemplateWrapper(tmpls["index"], "layout", nil)))
 
 	// rest-api
@@ -286,8 +321,6 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	http.Handle("/api/new", adapt(nil, mustParamsWrapper("lName", "fName", "email", "subject", "description"), basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
 	http.Handle("/api/mail", adapt(nil, basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
-
-	//http.Handle("/api/mail", adapt(nil, mustParamsWrapper("POST"), methodsWrapper("POST"), basicAuthWrapper(auth)))
 
 	portString := ":" + strconv.Itoa(port)
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)

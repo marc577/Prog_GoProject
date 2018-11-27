@@ -15,7 +15,7 @@ func main() {
 
 	logLoc := flag.String("logLoc", "../../../log", "Logfile Location")
 	userStoreLoc := flag.String("userLoc", "../../../storage/users.json", "User Storage Path")
-	ticketStoreLoc := flag.String("ticketLoc", "../../../storage/tickets", "Ticket Storage Path")
+	ticketStoreLoc := flag.String("ticketLoc", "../../../storage/tickets/", "Ticket Storage Path")
 	webPort := flag.Int("port", 8443, "https Webserver Port")
 	tlsCrt := flag.String("crt", "../../../keys/server.crt", "https Webserver Certificate")
 	tlsKey := flag.String("key", "../../../keys/server.key", "https Webserver Keyfile")
@@ -35,9 +35,9 @@ func main() {
 	createDirIfNotExist(ticketStoreLoc)
 	createDirIfNotExist(htmlLoc)
 
-	storagehandler.Init(*userStoreLoc, *ticketStoreLoc)
+	st := storagehandler.New(*userStoreLoc, *ticketStoreLoc)
 
-	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc)
+	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc, st)
 	if wsErr != nil {
 		log.Fatal("WebServer Error", wsErr)
 		logging.Error.Fatal("WebServer Error", wsErr)

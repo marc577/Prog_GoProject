@@ -27,10 +27,6 @@ func New(argUserStoreFile string, argTicketStoreDir string) *StorageHandler {
 ** TICKET FUNCTIONS
 ************************************ */
 
-func (handler *StorageHandler) setTickets(newTickets []Ticket) {
-	handler.tickets = newTickets
-}
-
 // GetTickets returns all tickets
 func (handler *StorageHandler) GetTickets() *[]Ticket {
 	return &handler.tickets
@@ -68,44 +64,28 @@ func (handler *StorageHandler) GetOpenTickets() *[]Ticket {
 	return &openTickets
 }
 
-func (handler *StorageHandler) updateTicketInScopeVariable(ticket Ticket) {
-	var newTickets []Ticket
-	for _, t := range handler.tickets {
-		if t.ID == ticket.ID {
-			newTickets = append(newTickets, ticket)
-		} else {
-			newTickets = append(newTickets, t)
-		}
-	}
-	handler.setTickets(newTickets)
-}
-
 // UpdateTicket updates the ticket in memory and rom
 // Returns the updated Ticket
-func (handler *StorageHandler) UpdateTicket(ticket Ticket) Ticket {
+func (handler *StorageHandler) UpdateTicket(ticket Ticket) (Ticket, error) {
 	// Update in memory storage
-	var t = ticket.writeTicketToMemory()
+	ticket, error := ticket.writeTicketToMemory()
 	// Update in scope variable
-	handler.updateTicketInScopeVariable(t)
-	return ticket
+	for i := 0; i < len(handler.tickets); i++ {
+		if handler.tickets[i].ID == ticket.ID {
+			handler.tickets[i] = ticket
+			break
+		}
+	}
+	return ticket, error
 }
 
 // CreateTicket creates a new ticket on persistant storage and rom
 // Returns the created Ticket
-func (handler *StorageHandler) CreateTicket(subject string, email string, text string) Ticket {
-	var ticket = storeTicket(handler, subject, email, text)
+func (handler *StorageHandler) CreateTicket(subject string, text string, firstName string, email string, lastName string) (Ticket, error) {
+	var ticket, error = storeTicket(handler, subject, text, email, firstName, lastName)
 	handler.tickets = append(handler.tickets, ticket)
-	return ticket
+	return ticket, error
 }
-
-/*
-func (handler *StorageHandler) deleteTicket(ticket Ticket) bool {
-
-	var ticket = storeTicket(handler, subject, email, text)
-	handler.tickets = append(handler.tickets, ticket)
-	return ticket
-}
-*/
 
 /* ************************************
 ** USER FUNCTIONS
