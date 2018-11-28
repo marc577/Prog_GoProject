@@ -11,11 +11,6 @@ import (
 	"strconv"
 )
 
-type DataWrapper interface {
-	area() float64
-	perim() float64
-}
-
 type contextKey string
 
 type adapter func(http.HandlerFunc) http.HandlerFunc
@@ -184,7 +179,7 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 // parameters, registers the urls and sets the Authenticator
 // function to the VerifyUser function
 // from the storagehandler packet
-func Start(port int, serverCertPath string, serverKeyPath string, rootPath string, st *storagehandler.StorageHandler) error {
+func Start(port int, serverCertPath string, serverKeyPath string, rootPath string, st storagehandler.StorageWrapper) error {
 
 	htmlRoot := rootPath
 	defaultOpenT := template.New("").Funcs(map[string]interface{}{
