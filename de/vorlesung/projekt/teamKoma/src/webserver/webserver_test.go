@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"storagehandler"
 	"strings"
 	"testing"
@@ -19,7 +20,7 @@ import (
 
 var server *httptest.Server
 
-func setup(handler http.Handler) *storagehandler.StorageHandler {
+func setup(handler http.Handler) storagehandler.StorageWrapper {
 	server = httptest.NewServer(handler)
 	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
@@ -265,15 +266,33 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 	assert.Equal(t, http.StatusText(http.StatusUnauthorized)+"\n", string(body), "wrong message")
 }
 
+// from https://www.dotnetperls.com/between-before-after-go
+func between(value string, a string, b string) string {
+	// Get substring between two strings.
+	posFirst := strings.Index(value, a)
+	if posFirst == -1 {
+		return ""
+	}
+	posLast := strings.Index(value, b)
+	if posLast == -1 {
+		return ""
+	}
+	posFirstAdjusted := posFirst + len(a)
+	if posFirstAdjusted >= posLast {
+		return ""
+	}
+	return value[posFirstAdjusted:posLast]
+}
 func TestStart(t *testing.T) {
 
-	urlsGET := []string{"/open", "/assigned", "/all", "/api/mail"}
+	urlsGET := []string{"/", "/open", "/assigned", "/all"}
 
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	host := "https://localhost:8443"
 	st := storagehandler.New("../../storage/users.json", "../../storage/tickets/")
+
 	go func() {
 		serr := Start(8443, "../../keys/server.crt", "../../keys/server.key", "../../html", st)
 		assert.NoError(t, serr)
@@ -287,5 +306,81 @@ func TestStart(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode, url)
 	}
+	// /new
+	client := &http.Client{Transport: transCfg}
+	form := url.Values{}
+	form.Add("lName", "a")
+	form.Add("fName", "b")
+	form.Add("email", "a@b")
+	form.Add("subject", "Test")
+	form.Add("description", "Das ist ein Test")
+	req, err := http.NewRequest("POST", host+"/new", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	res, err := client.Do(req)
+	body, err := ioutil.ReadAll(res.Body)
+	s := string(body)
+	tID := between(s, "<h3>", "</h3>")
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", tID)
+	assert.Equal(t, http.StatusOK, res.StatusCode, tID)
+
+	// /edit
+	form = url.Values{}
+	form.Add("state", "1")
+	form.Add("processor", "Werner")
+	req, err = http.NewRequest("POST", host+"/edit?ticket="+tID, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	body, err = ioutil.ReadAll(res.Body)
+	assert.Equal(t, http.StatusOK, res.StatusCode, string(body))
+
+	// /edit/add
+	form = url.Values{}
+	form.Add("type", "Inform")
+	form.Add("description", "Test Item")
+	form.Add("email", "a@k")
+	req, err = http.NewRequest("POST", host+"/edit/add?ticket="+tID, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	// /edit/free
+	req, err = http.NewRequest("GET", host+"/edit/free?ticket="+tID, nil)
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	// /edit/assign
+	req, err = http.NewRequest("GET", host+"/assign?ticket="+tID+"&user=Werner", nil)
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	// /edit/mail
+	req, err = http.NewRequest("GET", host+"/api/mail", nil)
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	body, err = ioutil.ReadAll(res.Body)
+	//s = string(body)
+	assert.NoError(t, err, s)
+
+	// var tickets []storagehandler.Email
+	// err = json.Unmarshal(body, &tickets)
+	req, err = http.NewRequest("POST", host+"/api/mail", bytes.NewReader(body))
+	req.SetBasicAuth("Werner", "password")
+	res, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	// /api/new
+	// /edit/combine
 
 }
