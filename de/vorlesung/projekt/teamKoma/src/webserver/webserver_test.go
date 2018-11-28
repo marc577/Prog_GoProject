@@ -267,7 +267,7 @@ func TestBasicAuthWrapperWithNotOKPW(t *testing.T) {
 
 func TestStart(t *testing.T) {
 
-	urlsGET := []string{"/open", "/assigned", "/all", "/edit", "/edit/free", "/assign", "/api/mail"}
+	urlsGET := []string{"/open", "/assigned", "/all", "/api/mail"}
 
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
