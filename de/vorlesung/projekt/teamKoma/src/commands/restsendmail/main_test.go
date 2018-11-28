@@ -1,4 +1,4 @@
-package restsendmail
+package main
 
 import (
 	"testing"
