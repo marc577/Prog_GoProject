@@ -15,7 +15,7 @@ import (
 
 func main() {
 
-	host := flag.String("host", "10.133.7.30", "Ticketsystem Hostname")
+	host := flag.String("host", "127.0.0.1", "Ticketsystem Hostname")
 	port := flag.Int("port", 8443, "Ticksetsystem Webserver Port")
 	user := flag.String("user", "Werner", "Your Ticketsystem Username")
 	pass := flag.String("password", "password", "Your Ticketsystem Password")
@@ -78,7 +78,6 @@ func setAllSentFlag(host string, port int, user string, pass string, mails2send 
 		log.Fatal("Could not generate correct JSON", err)
 	} else {
 		req, err := http.NewRequest("POST", "https://"+host+":"+strconv.Itoa(port)+"/api/mail", bytes.NewBuffer(mails2sendJSON))
-		//req.Header.Set("X-Custom-Header", "SentMails")
 		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
 			log.Fatal(err)
