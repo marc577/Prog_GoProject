@@ -329,6 +329,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	// insert ticket via mail
 	http.Handle("/api/new", adapt(func(w http.ResponseWriter, r *http.Request) {
 		_, err := ioutil.ReadAll(r.Body)
+
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
