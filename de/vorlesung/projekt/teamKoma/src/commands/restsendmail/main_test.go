@@ -7,6 +7,13 @@ import (
 )
 
 func TestGrabMailsToSend(t *testing.T) {
-	main()
+	//grabMailsToSend()
 	assert.True(t, true)
+}
+func TestInteract(t *testing.T) {
+
+}
+
+func TestSetSentFlag(t *testing.T) {
+
 }
