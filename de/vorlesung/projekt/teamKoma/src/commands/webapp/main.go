@@ -22,28 +22,49 @@ func main() {
 	htmlLoc := flag.String("htmlLoc", "../../../html", "Path to html template folder")
 
 	flag.Parse()
-	logging.LogInit(*logLoc)
-	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", *logLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: userStoreLoc:", *userStoreLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: TicketStoreLoc:", *ticketStoreLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(*webPort)}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", *tlsCrt}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", *tlsKey}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", *htmlLoc}, ""))
 
-	createDirIfNotExist(*logLoc)
-	createDirIfNotExist(*ticketStoreLoc)
-	createDirIfNotExist(*htmlLoc)
+	startup(*logLoc, *userStoreLoc, *ticketStoreLoc, *webPort, *tlsCrt, *tlsKey, *htmlLoc)
+}
 
-	st := storagehandler.New(*userStoreLoc, *ticketStoreLoc)
+func startup(logLoc string, userStoreLoc string, ticketStoreLoc string, webPort int, tlsCrt string, tlsKey string, htmlLoc string) {
+	logging.LogInit(logLoc)
+	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", logLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: userStoreLoc:", userStoreLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: TicketStoreLoc:", ticketStoreLoc}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(webPort)}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", tlsCrt}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", tlsKey}, ""))
+	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", htmlLoc}, ""))
 
-	wsErr := webserver.Start(*webPort, *tlsCrt, *tlsKey, *htmlLoc, st)
+	createDirIfNotExist(logLoc)
+	createDirIfNotExist(ticketStoreLoc)
+	createDirIfNotExist(htmlLoc)
+	createUserJSONIfNotExist(userStoreLoc)
+
+	st := storagehandler.New(userStoreLoc, ticketStoreLoc)
+
+	wsErr := webserver.Start(webPort, tlsCrt, tlsKey, htmlLoc, st)
 	if wsErr != nil {
 		log.Fatal("WebServer Error", wsErr)
 		logging.Error.Fatal("WebServer Error", wsErr)
 	}
 	logging.ShutdownLogging()
+}
 
+func createUserJSONIfNotExist(file string) (success bool) {
+	success = false
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		newFile, err := os.Create(file)
+		if err != nil {
+			success = false
+			logging.Error.Fatal("Could not create users.json "+file+": ", err)
+			return success
+		}
+		newFile.Close()
+		success = true
+	}
+
+	return success
 }
 
 func createDirIfNotExist(dir string) (success bool) {

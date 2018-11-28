@@ -18,7 +18,7 @@ type email struct {
 func main() {
 	host := flag.String("host", "127.0.0.1", "Ticketsystem Hostname")
 	port := flag.Int("port", 8443, "Ticksetsystem Webserver Port")
-	mail := flag.String("mail", "test@test.de", "Ticketsender mail adress")
+	mail := flag.String("mail", "test@test.de", "Ticketsender mail address")
 	subject := flag.String("subject", "testsubject", "Ticket subject")
 	description := flag.String("desc", "testdesc", "Ticket description")
 	flag.Parse()

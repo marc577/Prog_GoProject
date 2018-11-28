@@ -11,7 +11,14 @@ func TestCreateDirIfNotExist(t *testing.T) {
 	assert.True(t, createDirIfNotExist("../../test/"))
 	os.Remove("../../test/")
 	assert.False(t, createDirIfNotExist("!@#$%^&*()_"))
-	os.Mkdir("../../test/", 0400)
-	assert.False(t, createDirIfNotExist("../../test/test"))
-	os.RemoveAll("../../test/")
+}
+
+func TestCreateUserJSONIfNotExist(t *testing.T) {
+	assert.True(t, createUserJSONIfNotExist("../../users.json"))
+	os.Remove("../../users.json")
+	assert.False(t, createDirIfNotExist("!@#$%^&*()_.json"))
+}
+
+func TestStartup(t *testing.T) {
+	//startup("../../../log", "../../../storage/users.json", "../../../storage/tickets/", 8443, "../../../keys/server.crt", "../../../keys/server.key", "../../../html")
 }
