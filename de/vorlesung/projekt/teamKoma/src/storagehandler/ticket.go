@@ -9,8 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -122,15 +120,36 @@ func (ticket Ticket) GetFirstEntryOfTicket() (TicketItem, error) {
 	return firstItem, nil
 }
 
-func (handler *StorageHandler) loadTicketFilesFromMemory() []Ticket {
+// Deletes the ticket from cash and hdd
+func (handler *StorageHandler) deleteTicket(ticket Ticket) {
+
+	// delete from cache
+	var i int
+	for i = 0; i < len(*handler.GetTickets()); i++ {
+		if (*handler.GetTickets())[i].ID == ticket.ID {
+			break
+		}
+	}
+	handler.tickets[i] = handler.tickets[len(handler.tickets)-1]
+	handler.tickets[len(handler.tickets)-1] = Ticket{}
+	handler.tickets = handler.tickets[:len(handler.tickets)-1]
+
+	// Delete from hdd
+	os.Remove(ticket.storageHandler.ticketStoreDir + ticket.ID + ".json")
+}
+
+func (handler *StorageHandler) loadTicketFilesFromMemory() ([]Ticket, error) {
 
 	file, err := os.Open(handler.ticketStoreDir)
 	if err != nil {
-		log.Fatalf("failed opening directory: %s", err)
+		return nil, err
 	}
 	defer file.Close()
 
-	list, _ := file.Readdirnames(0) // 0 to read all files and folders
+	list, err := file.Readdirnames(0) // 0 to read all files and folders
+	if err != nil {
+		return nil, err
+	}
 	for _, name := range list {
 		if strings.Contains(name, ".json") {
 			var ticket Ticket
@@ -140,16 +159,15 @@ func (handler *StorageHandler) loadTicketFilesFromMemory() []Ticket {
 			handler.tickets = append(handler.tickets, ticket)
 		}
 	}
-	return handler.tickets
+	return handler.tickets, nil
 }
 
 func (ticket Ticket) writeTicketToMemory() (Ticket, error) {
 	result, err := json.Marshal(ticket)
 	if err != nil {
-		fmt.Println("Error while add user")
+		return Ticket{}, errors.New("Could not marshal ticket")
 	}
 	if writeJSONToFile((ticket.storageHandler.ticketStoreDir+ticket.ID+".json"), result) == false {
-		fmt.Println("Error while write Ticket to memory")
 		return Ticket{}, errors.New("Could not write ticket to memory")
 	}
 	return ticket, nil

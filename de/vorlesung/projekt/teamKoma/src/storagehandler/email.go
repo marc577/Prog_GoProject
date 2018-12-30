@@ -23,8 +23,8 @@ func (handler *StorageHandler) GetMailsToSend() []Email {
 	return mails2send
 }
 
-// SetSendedMails sets the status to sendet of the ticketItems
-func (handler *StorageHandler) SetSendedMails(sendedMails []Email) bool {
+// SetSentMails sets the status to sent of the ticketItems
+func (handler *StorageHandler) SetSentMails(sendedMails []Email) bool {
 	for _, email := range sendedMails {
 		var ticket, error = handler.GetTicketByID(email.TicketID)
 		if error != nil {
