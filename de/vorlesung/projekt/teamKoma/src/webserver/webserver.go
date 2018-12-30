@@ -47,7 +47,7 @@ func methodsWrapper(methods ...string) adapter {
 					return
 				}
 			}
-			http.Error(w, "Method Not Allowd", 405)
+			http.Error(w, "Method Not Allowed", 405)
 			w.WriteHeader(405)
 		})
 	}
