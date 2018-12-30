@@ -5,15 +5,12 @@
 package main
 
 import "testing"
-
-func TestSendReq(t *testing.T) {
-
-}
+import "github.com/stretchr/testify/assert"
 
 func TestGenJSONData(t *testing.T) {
-
+	assert.NotNil(t, genJSONData("test@test.com", "test", "test"))
 }
-
-func TestMain(t *testing.T) {
-
+func TestSendReq(t *testing.T) {
+	jsonData := genJSONData("test@test.de", "test", "test")
+	assert.Nil(t, sendReq("localhost", 8443, jsonData))
 }

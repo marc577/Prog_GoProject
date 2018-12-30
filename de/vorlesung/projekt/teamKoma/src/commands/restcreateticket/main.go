@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"log"
@@ -42,12 +43,15 @@ func genJSONData(mail string, subject string, desc string) []byte {
 	return jsonData
 }
 
-func sendReq(host string, port int, jsonData []byte) {
+func sendReq(host string, port int, jsonData []byte) error {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	res, err := http.Post("https://"+host+":"+strconv.Itoa(port)+"/api/new", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal("Error connecting to Server", err)
+		return err
 	}
 	if res.StatusCode == http.StatusOK {
 		log.Println("Sent Request to API")
 	}
+	return nil
 }
