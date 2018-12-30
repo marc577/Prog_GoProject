@@ -23,6 +23,7 @@ type email struct {
 }
 
 func main() {
+	//set flags
 	host := flag.String("host", "127.0.0.1", "Ticketsystem Hostname")
 	port := flag.Int("port", 8443, "Ticksetsystem Webserver Port")
 	mail := flag.String("mail", "test@test.de", "Ticketsender mail address")
@@ -31,10 +32,15 @@ func main() {
 	subject := flag.String("subject", "testsubject", "Ticket subject")
 	description := flag.String("desc", "testdesc", "Ticket description")
 	flag.Parse()
+
+	//generate JSON Data from Flags
 	jsonData := genJSONData(*mail, *firstname, *lastname, *subject, *description)
+
+	//send Request to API
 	sendReq(*host, *port, jsonData)
 }
 
+//genJSONData generates valid JSON Data from given input
 func genJSONData(mail string, firstname string, lastname string, subject string, desc string) []byte {
 	mail2send := email{
 		Mail:        mail,
@@ -49,8 +55,11 @@ func genJSONData(mail string, firstname string, lastname string, subject string,
 	return jsonData
 }
 
+//sendReq sends the POST Request to the API
 func sendReq(host string, port int, jsonData []byte) error {
+	//need to ignore unknown cert authority for Request
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
 	res, err := http.Post("https://"+host+":"+strconv.Itoa(port)+"/api/new", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal("Error connecting to Server", err)
