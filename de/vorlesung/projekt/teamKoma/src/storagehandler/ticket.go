@@ -149,7 +149,6 @@ func (handler *StorageHandler) loadTicketFilesFromMemory() ([]Ticket, error) {
 	defer file.Close()
 
 	list, err := file.Readdirnames(0) // 0 to read all files and folders
-	file.Close()
 	if err != nil {
 		return nil, err
 	}

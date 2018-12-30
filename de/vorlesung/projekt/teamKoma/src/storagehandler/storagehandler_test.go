@@ -178,7 +178,7 @@ func TestUserFunctions(t *testing.T) {
 	}
 
 	var oldHolidayState = storageHandler.GetUserByUserName(userName).HasHoliday
-	storageHandler.toggleHoliday(userName)
+	storageHandler.ToggleHoliday(userName)
 	var newHolidayState = storageHandler.GetUserByUserName(userName).HasHoliday
 
 	if oldHolidayState == newHolidayState {
