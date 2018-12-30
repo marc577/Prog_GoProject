@@ -4,7 +4,7 @@
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
             <h6 class="navbar-brand" style="margin-bottom:0px">{{ .Data.ID}}</h6>
         </div>
-        <a type="button" class="btn btn-default navbar-btn pull-right" href="./open">Admin Panel</a>
+        <a type="button" class="btn btn-primary navbar-btn pull-right" href="./open">Admin Panel</a>
       </nav>
       <br>
     <table class="table">
@@ -49,7 +49,7 @@
                 {{if ne .Data.Processor ""}}
                 <tr>
                     <form action="./edit/combine?ticket={{.Data.ID}}" method="post">
-                        <td>Add this ticket {{.Data.ID}} to</td>
+                        <td>Combine {{.Data.ID}} and </td>
                         <td>
                             {{$tWithSame := getTsWithSameP .Data.Processor}}
                             <select name="toticket">

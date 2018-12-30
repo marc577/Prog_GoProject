@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"storagehandler"
 	"strconv"
+	"strings"
 )
 
 // contextKey used for saving different values in the http context
@@ -389,11 +390,27 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		err = json.Unmarshal(bodystring, &m)
 		if err == nil {
 			found := false
+			tickets := st.GetTickets()
+			subject := m["subject"].(string)
+			name := m["firstname"].(string) + " " + m["lastname"].(string) + " "
+			var ticket storagehandler.Ticket
+			for _, element := range *tickets {
+				tid := element.ID
+				if strings.Contains(subject, tid) {
+					ticket = element
+					found = true
+				}
+			}
 			if found == true {
-				//TODO: check if exists
+				_, er := ticket.AddEntry2Ticket(name, m["description"].(string), false, m["mail"].(string))
+				if ticket.TicketState == storagehandler.TSClosed {
+					ticket.SetTicketStateOpen()
+				}
+				if er != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
 			} else {
-				name := m["firstname"].(string) + " " + m["lastname"].(string) + " "
-				_, e := st.CreateTicket(m["subject"].(string), m["description"].(string), m["mail"].(string), name)
+				_, e := st.CreateTicket(subject, m["description"].(string), m["mail"].(string), name)
 				if e != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				}
@@ -437,8 +454,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		if uc != nil {
 			users := uc.(string)
 			user := st.GetUserByUserName(users)
-			r.Context().Value(user)
-			//TODO: toggle user holiday
+			st.ToggleHoliday(user.Name)
 		} else {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}

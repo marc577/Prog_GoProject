@@ -17,10 +17,10 @@
     <td>{{ len .Items}}</td>
     <td>{{ .GetLastEntryOfTicket.CreationDate.Format "02 Jan 2006  15:04"}}</td>
     <td>
-        <a type="button" class="btn btn-default navbar-btn pull-right" href="./edit/free?ticket={{.ID}}">Reopen</a>
+        <a type="button" class="btn btn-primary navbar-btn pull-right" href="./edit/free?ticket={{.ID}}">Reopen</a>
     </td>
     <td>
-        <a type="button" class="btn btn-default navbar-btn pull-right" href="./edit?ticket={{.ID}}">Edit</a>
+        <a type="button" class="btn btn-primary navbar-btn pull-right" href="./edit?ticket={{.ID}}">Edit</a>
     </td>
   </tr>
 {{end}}
