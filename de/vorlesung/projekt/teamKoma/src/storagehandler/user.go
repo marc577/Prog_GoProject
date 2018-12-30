@@ -42,7 +42,7 @@ func match(data, secret []byte) bool {
 }
 
 func (handler *StorageHandler) verifyUser(username string, password string) bool {
-	var user = handler.getUserByUserName(username)
+	var user = handler.GetUserByUserName(username)
 	return match(user.Password, []byte(password))
 }
 
@@ -52,7 +52,7 @@ func (handler *StorageHandler) loadUserFromMemory() []User {
 	return handler.users
 }
 
-func (handler *StorageHandler) getUserByUserName(userName string) User {
+func (handler *StorageHandler) GetUserByUserName(userName string) User {
 	var specUser User
 	var users = handler.GetUsers()
 	for _, user := range *users {

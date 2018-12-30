@@ -1,3 +1,5 @@
+// Package webserver provides methods for starting an HTTPS Server
+// for the ticket application
 package webserver
 
 import (
@@ -11,17 +13,21 @@ import (
 	"strconv"
 )
 
+// contextKey used for saving different values in the http context
 type contextKey string
 
+// adapter is used for http conntroller functions definition
+// Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
 type adapter func(http.HandlerFunc) http.HandlerFunc
 
-// verfiy if a string is a valid email adress
+// verifyEMail verfies if a string is a valid email adress with an regex expression
 // from: http://www.golangprograms.com/regular-expression-to-validate-email-address.html
 func verifyEMail(mail string) bool {
 	re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	return re.MatchString(mail)
 }
 
+// methodsWrapper concats different HandlerFuncs
 func methodsWrapper(methods ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +45,9 @@ func methodsWrapper(methods ...string) adapter {
 		})
 	}
 }
+
+// mustParamsWrapper checks if the given params
+// complete and valid for the request
 func mustParamsWrapper(params ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +65,8 @@ func mustParamsWrapper(params ...string) adapter {
 	}
 }
 
+// saveParamsWrapper saves the the given params
+// in the context variable from the request
 func saveParamsWrapper(params ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +84,7 @@ func saveParamsWrapper(params ...string) adapter {
 	}
 }
 
+// redirectWrapper redirects the request to the given url
 func redirectWrapper(path string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +94,8 @@ func redirectWrapper(path string) adapter {
 	}
 }
 
+// basicAuthWrapper checks if the given basic auth
+// credentials are valid and saves the user to the http context
 func basicAuthWrapper(authenticator Authenticator) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +113,7 @@ func basicAuthWrapper(authenticator Authenticator) adapter {
 	}
 }
 
+// functionCtxWrapper saves a specific context to the http request
 func functionCtxWrapper(f func(w http.ResponseWriter, r *http.Request) context.Context) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -114,12 +129,14 @@ func functionCtxWrapper(f func(w http.ResponseWriter, r *http.Request) context.C
 	}
 }
 
+// webContext describes the tmeplate data
 type webContext struct {
 	Data interface{}
 	Path string
 	User interface{}
 }
 
+// serveTemplateWrapper serves the given template by name with the given data
 func serveTemplateWrapper(t *template.Template, name string, data interface{}) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +169,7 @@ func serveTemplateWrapper(t *template.Template, name string, data interface{}) a
 	}
 }
 
-// Adapts several http handlers
+// adapt adapts several http handlers
 // Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
 func adapt(h http.HandlerFunc, adapters ...adapter) http.HandlerFunc {
 	for _, adapter := range adapters {
@@ -184,6 +201,10 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	htmlRoot := rootPath
 	defaultOpenT := template.New("").Funcs(map[string]interface{}{
 		"getUser": func() string { return "" },
+		"getHoliday": func(user string) bool {
+			us := st.GetUserByUserName(user)
+			return us.HasHoliday
+		},
 	})
 	defaultEditT := template.New("").Funcs(map[string]interface{}{
 		"getUser": func() string { return "" },
@@ -212,8 +233,8 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["open"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["assigned"] = template.Must(template.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["all"] = template.Must(template.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["assigned"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["all"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["edit"] = template.Must(defaultEditT.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
 
@@ -366,6 +387,20 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			}
 		}
 	}, basicAuthWrapper(auth), methodsWrapper("GET", "POST")))
+
+	http.Handle("/user/holiday", adapt(nil, redirectWrapper("/open"), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
+
+		uc := r.Context().Value(contextKey("user"))
+		if uc != nil {
+			users := uc.(string)
+			user := st.GetUserByUserName(users)
+			r.Context().Value(user)
+			//TODO: toggle user holiday
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return nil
+	}), basicAuthWrapper(auth), methodsWrapper("POST")))
 
 	portString := ":" + strconv.Itoa(port)
 	httpErr := http.ListenAndServeTLS(portString, serverCertPath, serverKeyPath, nil)

@@ -21,6 +21,15 @@
           {{ end }}
         </div>
       </div>
+          <form action="./user/holiday?user={{ .User }}" method="POST">
+            {{$holiday := getHoliday .User }}
+            {{ if $holiday }}
+            <input type="submit" class="btn btn-secondary" style="float: right; margin-right: 15px;" value="Come back from Holiday!">
+            {{ end }}
+            {{ if not $holiday}}
+            <input type="submit" class="btn btn-secondary" style="float: right; margin-right: 15px;" value="Ab in den Urlaub!">
+            {{ end }}
+          </form>
           <a type="button" class="btn btn-default navbar-btn pull-right" href="./">New Ticket</a>
       </nav>
       <div>

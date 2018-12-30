@@ -15,6 +15,7 @@ type StorageHandler struct {
 // The StorageWrapper Interface for the ticket application
 type StorageWrapper interface {
 	GetAvailableUsers() *[]User
+	GetUserByUserName(userName string) User
 	GetMailsToSend() []Email
 	SetSendedMails(sendedMails []Email) bool
 	GetTicketByID(id string) (Ticket, error)
