@@ -91,15 +91,6 @@ func (handler *StorageHandler) CreateTicket(subject string, text string, email s
 	return ticket, error
 }
 
-/*
-// AddEntry2Ticket adds an entry to the given ticket
-func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string) (Ticket, error) {
-	currTime := time.Now()
-	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo}
-	return ticket.storageHandler.UpdateTicket(ticket)
-}
-*/
-
 //CombineTickets combines the second ticket into the first one by given ids
 func (handler *StorageHandler) CombineTickets(id1 string, id2 string) (Ticket, error) {
 	var ticket1 = Ticket{}

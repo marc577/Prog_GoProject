@@ -9,8 +9,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 )
 
 // User struct defines the user information of processors
@@ -27,7 +27,7 @@ func saltedHash(secret []byte) []byte {
 	buf := make([]byte, saltSize, saltSize+sha256.Size)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
-		panic(fmt.Errorf("random read failed: %v", err))
+		log.Fatal("Error gen salt")
 	}
 	h := sha256.New()
 	h.Write(buf)
@@ -37,7 +37,7 @@ func saltedHash(secret []byte) []byte {
 
 func match(data, secret []byte) bool {
 	if len(data) != saltSize+sha256.Size {
-		fmt.Println("wrong length of data")
+		log.Fatal("wrong length of data")
 	}
 	h := sha256.New()
 	h.Write(data[:saltSize])
@@ -56,6 +56,7 @@ func (handler *StorageHandler) loadUserFromMemory() []User {
 	return handler.users
 }
 
+// GetUserByUserName return the user by the given name
 func (handler *StorageHandler) GetUserByUserName(userName string) User {
 	var specUser User
 	var users = handler.GetUsers()
@@ -81,14 +82,13 @@ func (handler *StorageHandler) isUserAvailable(userName string) bool {
 
 func (handler *StorageHandler) addUser(userName string, password string) bool {
 	if handler.isUserAvailable(userName) {
-		fmt.Println("user existiert bereits")
 		return false
 	}
 	var hashedPwd = saltedHash([]byte(password))
 	handler.users = append((handler).users, User{0, userName, hashedPwd, false})
 	result, err := json.Marshal(handler.users)
 	if err != nil {
-		fmt.Println("Error while add user")
+		log.Fatal("Error while add user")
 	}
 	return writeJSONToFile(handler.userStoreFile, result)
 }
@@ -96,7 +96,6 @@ func (handler *StorageHandler) addUser(userName string, password string) bool {
 func (handler *StorageHandler) deleteUser(userName string) bool {
 
 	if handler.isUserAvailable(userName) == false {
-		fmt.Println("user does not exists")
 		return false
 	}
 	var i int
@@ -111,7 +110,7 @@ func (handler *StorageHandler) deleteUser(userName string) bool {
 
 	result, err := json.Marshal(*handler.GetUsers())
 	if err != nil {
-		fmt.Println("Error while delete user")
+		log.Fatal("Error while delete user")
 	}
 	return writeJSONToFile(handler.userStoreFile, result)
 }

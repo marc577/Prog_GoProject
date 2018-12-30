@@ -5,13 +5,14 @@
 package storagehandler
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
 func writeJSONToFile(file string, jObj []byte) bool {
-	err := ioutil.WriteFile(file, jObj, 0777)
+	os.Remove(file)
+	err := ioutil.WriteFile(file, jObj, 0666)
 	if err == nil {
 		return true
 	}
@@ -25,7 +26,7 @@ func readJSONFromFile(file string) []byte {
 	jsonFile, err := os.Open(file)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
 	defer jsonFile.Close()

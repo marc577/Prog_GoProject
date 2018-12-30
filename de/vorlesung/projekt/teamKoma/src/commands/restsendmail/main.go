@@ -21,16 +21,19 @@ import (
 )
 
 func main() {
-
+	//set Flags
 	host := flag.String("host", "127.0.0.1", "Ticketsystem Hostname")
 	port := flag.Int("port", 8443, "Ticksetsystem Webserver Port")
 	user := flag.String("user", "Werner", "Your Ticketsystem Username")
 	pass := flag.String("password", "password", "Your Ticketsystem Password")
 
 	flag.Parse()
+
+	//starts user interaction process
 	interact(*host, *port, *user, *pass)
 }
 
+//interact lets the user decide which mails to be send
 func interact(host string, port int, user string, pass string) {
 	log.Println("Flags parsed: Host:" + host)
 	log.Println("Flags Parsed: Port:" + strconv.Itoa(port))
@@ -105,10 +108,14 @@ func interact(host string, port int, user string, pass string) {
 
 }
 
+//grabMailsToSend from the API based on user auth
 func grabMailsToSend(host string, port int, user string, pass string) []storagehandler.Email {
+	//ignoring cert Authority Error
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+
+	//configurung http client for Request
 	client := &http.Client{Transport: transCfg}
 	req, err := http.NewRequest("GET", "https://"+host+":"+strconv.Itoa(port)+"/api/mail", nil)
 	if err != nil {
@@ -125,6 +132,7 @@ func grabMailsToSend(host string, port int, user string, pass string) []storageh
 	return tickets
 }
 
+//setSentFlag in all mails that have been marked to be send
 func setSentFlag(host string, port int, user string, pass string, mails2send []storagehandler.Email) error {
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
