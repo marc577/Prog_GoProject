@@ -5,7 +5,6 @@
 package storagehandler
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -31,16 +30,14 @@ func TestTicketItems(t *testing.T) {
 	testTicket.AddEntry2Ticket("TestCreator", "last entry", false, "TestEmailTo")
 	time.Sleep(1 * time.Second)
 	ticketEntry, error := testTicket.GetLastEntryOfTicket()
-	if error != nil {
-		fmt.Println("Error")
+	if error != nil && ticketEntry != (TicketItem{}) {
+		t.Error("Error")
 	}
-	fmt.Println(ticketEntry)
 
 	ticketEntry, error = testTicket.GetFirstEntryOfTicket()
-	if error != nil {
-		fmt.Println("Error")
+	if error != nil && ticketEntry != (TicketItem{}) {
+		t.Error("Error")
 	}
-	fmt.Println(ticketEntry)
 }
 func TestTicketHandling(t *testing.T) {
 
@@ -129,6 +126,22 @@ func TestTicketHandling(t *testing.T) {
 
 	storageHandler.CombineTickets(testTicketCombine1.ID, testTicketCombine2.ID)
 
+	// Test mails to send
+	var testTicketMail2send, errSent = storageHandler.CreateTicket("TestTicket2Mail", "TestText", "TestMail", "TestName")
+	if errSent != nil {
+		t.Error("Error in create test ticket for sending mail")
+	}
+	testTicketMail2send.AddEntry2Ticket("TestCreator2Send", "TestText2send", true, "testMailTo")
+	var tickets2Send = storageHandler.GetMailsToSend()
+	var lenTickets2Send = len(tickets2Send)
+	var ticketsWhichWillSend []Email
+	ticketsWhichWillSend = append(ticketsWhichWillSend, tickets2Send[0])
+	storageHandler.SetSentMails(ticketsWhichWillSend)
+	tickets2Send = storageHandler.GetMailsToSend()
+	var newLenTickets2Send = len(tickets2Send)
+	if newLenTickets2Send == lenTickets2Send {
+		t.Error("Error while sending mails")
+	}
 }
 
 /* ************************************
