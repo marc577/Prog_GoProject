@@ -24,7 +24,7 @@ import (
 
 var server *httptest.Server
 
-func setup(handler http.Handler) storagehandler.StorageHandler {
+func setup(handler http.Handler) *storagehandler.StorageHandler {
 	server = httptest.NewServer(handler)
 	return storagehandler.New("../../storage/users.json", "../../storage/tickets")
 }
