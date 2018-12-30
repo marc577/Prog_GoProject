@@ -16,6 +16,8 @@ import (
 
 type email struct {
 	Mail        string `json:"mail"`
+	Firstname   string `json:"firstname"`
+	Lastname    string `json:"lastname"`
 	Subject     string `json:"subject"`
 	Description string `json:"description"`
 }
@@ -24,16 +26,20 @@ func main() {
 	host := flag.String("host", "127.0.0.1", "Ticketsystem Hostname")
 	port := flag.Int("port", 8443, "Ticksetsystem Webserver Port")
 	mail := flag.String("mail", "test@test.de", "Ticketsender mail address")
+	firstname := flag.String("firstname", "test", "Ticketsender firstname")
+	lastname := flag.String("lastname", "test", "Ticketsender lastname")
 	subject := flag.String("subject", "testsubject", "Ticket subject")
 	description := flag.String("desc", "testdesc", "Ticket description")
 	flag.Parse()
-	jsonData := genJSONData(*mail, *subject, *description)
+	jsonData := genJSONData(*mail, *firstname, *lastname, *subject, *description)
 	sendReq(*host, *port, jsonData)
 }
 
-func genJSONData(mail string, subject string, desc string) []byte {
+func genJSONData(mail string, firstname string, lastname string, subject string, desc string) []byte {
 	mail2send := email{
 		Mail:        mail,
+		Firstname:   firstname,
+		Lastname:    lastname,
 		Subject:     subject,
 		Description: desc}
 	jsonData, err := json.Marshal(mail2send)
