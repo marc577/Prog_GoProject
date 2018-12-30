@@ -124,7 +124,7 @@ func grabMailsToSend(host string, port int, user string, pass string) []storageh
 	return tickets
 }
 
-func setSentFlag(host string, port int, user string, pass string, mails2send []storagehandler.Email) {
+func setSentFlag(host string, port int, user string, pass string, mails2send []storagehandler.Email) error {
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -132,20 +132,24 @@ func setSentFlag(host string, port int, user string, pass string, mails2send []s
 	mails2sendJSON, err := json.Marshal(mails2send)
 	if err != nil {
 		log.Fatal("Could not generate correct JSON", err)
+		return err
 	} else {
 		req, err := http.NewRequest("POST", "https://"+host+":"+strconv.Itoa(port)+"/api/mail", bytes.NewBuffer(mails2sendJSON))
 		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
 			log.Fatal(err)
+			return err
 		}
 		req.SetBasicAuth(user, pass)
 		res, err := client.Do(req)
 		if err != nil {
 			log.Fatal("Could not establish Connection. Is the server running? Hostname and port correct?", err)
+			return err
 		}
 		if res.StatusCode == http.StatusOK {
 			log.Println("Set Sentflag in Mails")
 		}
 	}
+	return nil
 
 }
