@@ -31,9 +31,9 @@ func (handler *StorageHandler) SetSentMails(sendedMails []Email) bool {
 			return false
 		}
 		for _, item := range ticket.Items {
-			if item.CreationDate == email.TicketItem.CreationDate {
+			if item.CreationDateString == email.TicketItem.CreationDateString {
 				item.IsSended = true
-				ticket.Items[item.CreationDate] = item
+				ticket.Items[item.CreationDateString] = item
 				ticket, error = handler.UpdateTicket(ticket)
 				if error != nil {
 					return false
