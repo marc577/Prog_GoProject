@@ -83,6 +83,11 @@ func (handler *StorageHandler) ToggleHoliday(userName string) bool {
 			}
 		}
 	}
+	result, err := json.Marshal(*handler.GetUsers())
+	if err != nil {
+		log.Fatal("Error while delete user")
+	}
+	writeJSONToFile(handler.userStoreFile, result)
 	return newHolidayState
 }
 
