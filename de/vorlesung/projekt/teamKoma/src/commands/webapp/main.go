@@ -7,17 +7,13 @@ package main
 import (
 	"flag"
 	"log"
-	"logging"
 	"os"
 	"storagehandler"
-	"strconv"
-	"strings"
 	"webserver"
 )
 
 func main() {
 
-	logLoc := flag.String("logLoc", "../../../log", "Logfile Location")
 	userStoreLoc := flag.String("userLoc", "../../../storage/users.json", "User Storage Path")
 	ticketStoreLoc := flag.String("ticketLoc", "../../../storage/tickets/", "Ticket Storage Path")
 	webPort := flag.Int("port", 8443, "https Webserver Port")
@@ -27,20 +23,11 @@ func main() {
 
 	flag.Parse()
 
-	startup(*logLoc, *userStoreLoc, *ticketStoreLoc, *webPort, *tlsCrt, *tlsKey, *htmlLoc)
+	startup(*userStoreLoc, *ticketStoreLoc, *webPort, *tlsCrt, *tlsKey, *htmlLoc)
 }
 
-func startup(logLoc string, userStoreLoc string, ticketStoreLoc string, webPort int, tlsCrt string, tlsKey string, htmlLoc string) {
-	logging.LogInit(logLoc)
-	logging.Info.Println(strings.Join([]string{"Flags parsed: LogLoc:", logLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: userStoreLoc:", userStoreLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: TicketStoreLoc:", ticketStoreLoc}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: Port:", strconv.Itoa(webPort)}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: CRT File:", tlsCrt}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: KEY File:", tlsKey}, ""))
-	logging.Info.Println(strings.Join([]string{"Flags parsed: htmlLoc:", htmlLoc}, ""))
+func startup(userStoreLoc string, ticketStoreLoc string, webPort int, tlsCrt string, tlsKey string, htmlLoc string) {
 
-	createDirIfNotExist(logLoc)
 	createDirIfNotExist(ticketStoreLoc)
 	createDirIfNotExist(htmlLoc)
 	createUserJSONIfNotExist(userStoreLoc)
@@ -50,9 +37,7 @@ func startup(logLoc string, userStoreLoc string, ticketStoreLoc string, webPort 
 	wsErr := webserver.Start(webPort, tlsCrt, tlsKey, htmlLoc, st)
 	if wsErr != nil {
 		log.Fatal("WebServer Error", wsErr)
-		logging.Error.Fatal("WebServer Error", wsErr)
 	}
-	logging.ShutdownLogging()
 }
 
 func createUserJSONIfNotExist(file string) (success bool) {
@@ -61,7 +46,7 @@ func createUserJSONIfNotExist(file string) (success bool) {
 		newFile, err := os.Create(file)
 		if err != nil {
 			success = false
-			logging.Error.Fatal("Could not create users.json "+file+": ", err)
+			log.Fatal("Could not create users.json "+file+": ", err)
 			return success
 		}
 		newFile.Close()
@@ -77,7 +62,7 @@ func createDirIfNotExist(dir string) (success bool) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
 			success = false
-			logging.Error.Fatal("Could not create Folder "+dir+": ", err)
+			log.Fatal("Could not create Folder "+dir+": ", err)
 			return success
 		}
 		success = true
