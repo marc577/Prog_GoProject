@@ -30,30 +30,34 @@ func startup(userStoreLoc string, ticketStoreLoc string, webPort int, tlsCrt str
 
 	createDirIfNotExist(ticketStoreLoc)
 	createDirIfNotExist(htmlLoc)
-	createUserJSONIfNotExist(userStoreLoc)
+	_, existed := createUserJSONIfNotExist(userStoreLoc)
 
 	st := storagehandler.New(userStoreLoc, ticketStoreLoc)
-
+	if existed == false {
+		st.CreateUser("admin", "admin")
+	}
 	wsErr := webserver.Start(webPort, tlsCrt, tlsKey, htmlLoc, st)
 	if wsErr != nil {
 		log.Fatal("WebServer Error", wsErr)
 	}
 }
 
-func createUserJSONIfNotExist(file string) (success bool) {
+func createUserJSONIfNotExist(file string) (success bool, existed bool) {
 	success = false
+	existed = true
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		newFile, err := os.Create(file)
+		existed = false
 		if err != nil {
 			success = false
 			log.Fatal("Could not create users.json "+file+": ", err)
-			return success
+			return false, success
 		}
 		newFile.Close()
 		success = true
 	}
 
-	return success
+	return success, existed
 }
 
 func createDirIfNotExist(dir string) (success bool) {
