@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"storagehandler"
@@ -222,6 +223,8 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	tmpls["edit"] = template.Must(defaultEditT.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
 
 	auth := AuthenticatorFunc(st.VerifyUser)
+
+	log.Println("Webserver started correct. You can access Webpage via https://localhost:" + strconv.Itoa(port))
 
 	// frontend
 	http.Handle("/open", adapt(nil, serveTemplateWrapper(tmpls["open"], "layout", nil), functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
