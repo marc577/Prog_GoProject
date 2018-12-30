@@ -22,7 +22,3 @@ func TestCreateUserJSONIfNotExist(t *testing.T) {
 	os.Remove("../../users.json")
 	assert.False(t, createDirIfNotExist("!@#$%^&*()_.json"))
 }
-
-func TestStartup(t *testing.T) {
-	//startup("../../../log", "../../../storage/users.json", "../../../storage/tickets/", 8443, "../../../keys/server.crt", "../../../keys/server.key", "../../../html")
-}
