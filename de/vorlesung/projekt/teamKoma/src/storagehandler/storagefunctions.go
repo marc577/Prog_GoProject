@@ -11,7 +11,8 @@ import (
 )
 
 func writeJSONToFile(file string, jObj []byte) bool {
-	err := ioutil.WriteFile(file, jObj, 0777)
+	os.Remove(file)
+	err := ioutil.WriteFile(file, jObj, 0666)
 	if err == nil {
 		return true
 	}
