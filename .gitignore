@@ -38,3 +38,6 @@ de/vorlesung/projekt/teamKoma/pkg/windows_amd64/logging.a
 de/vorlesung/projekt/teamKoma/src/github.com/
 de/vorlesung/projekt/teamKoma/src/golang.org/
 de/vorlesung/projekt/teamKoma/bin/gocode
+de/vorlesung/projekt/teamKoma/src/commands/webapp/debug
+de/vorlesung/projekt/teamKoma/src/commands/restcreateticket/restcreateticket
+de/vorlesung/projekt/teamKoma/src/commands/restsendmail/restsendmail

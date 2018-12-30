@@ -60,6 +60,7 @@ func interact(host string, port int, user string, pass string) {
 		for ok := true; ok; {
 			cmd, _ = reader.ReadString('\n')
 			cmd = strings.Replace(cmd, "\r\n", "", -1)
+			cmd = strings.Replace(cmd, "\n", "", -1)
 			if strings.Compare("all", cmd) == 0 {
 				setSentFlag(host, port, user, pass, mails2send)
 				ok = false

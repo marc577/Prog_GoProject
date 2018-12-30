@@ -385,9 +385,20 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		var m interface{}
+		m := make(map[string]interface{})
 		err = json.Unmarshal(bodystring, &m)
-
+		if err == nil {
+			found := false
+			if found == true {
+				//TODO: check if exists
+			} else {
+				name := m["firstname"].(string) + " " + m["lastname"].(string) + " "
+				_, e := st.CreateTicket(m["subject"].(string), m["description"].(string), m["mail"].(string), name)
+				if e != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
+			}
+		}
 	}, methodsWrapper("POST")))
 	// mail sending
 	http.Handle("/api/mail", adapt(func(w http.ResponseWriter, r *http.Request) {
