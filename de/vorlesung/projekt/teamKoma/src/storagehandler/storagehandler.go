@@ -105,6 +105,42 @@ func (handler *StorageHandler) CreateTicket(subject string, text string, email s
 	return ticket, error
 }
 
+/*
+// AddEntry2Ticket adds an entry to the given ticket
+func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string) (Ticket, error) {
+	currTime := time.Now()
+	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo}
+	return ticket.storageHandler.UpdateTicket(ticket)
+}
+*/
+
+//CombineTickets combines the second ticket into the first one by given ids
+func (handler *StorageHandler) CombineTickets(id1 string, id2 string) (Ticket, error) {
+	var ticket1 = Ticket{}
+	ticket1.ID = "-1"
+	var ticket2 = Ticket{}
+	ticket2.ID = "-2"
+	for i := 0; i < len(handler.tickets); i++ {
+		if handler.tickets[i].ID == id1 {
+			ticket1 = handler.tickets[i]
+		} else if handler.tickets[i].ID == id2 {
+			ticket2 = handler.tickets[i]
+		}
+	}
+	if ticket1.ID == "-1" || ticket2.ID == "-2" {
+		return Ticket{}, errors.New("One of the tickets can't be found")
+	}
+	if ticket1.Processor != ticket2.Processor {
+		return Ticket{}, errors.New("The tickets have not the same processor")
+	}
+	for _, item2 := range ticket2.Items {
+		ticket1.Items[item2.CreationDate] = item2
+	}
+	var retTicket, error = handler.UpdateTicket(ticket1)
+	ticket2.storageHandler.deleteTicket(ticket2)
+	return retTicket, error
+}
+
 /* ************************************
 ** USER FUNCTIONS
 ************************************ */

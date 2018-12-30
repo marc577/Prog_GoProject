@@ -9,3 +9,11 @@ import "testing"
 func TestSendReq(t *testing.T) {
 
 }
+
+func TestGenJSONData(t *testing.T) {
+
+}
+
+func TestMain(t *testing.T) {
+
+}

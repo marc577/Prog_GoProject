@@ -118,6 +118,17 @@ func TestTicketHandling(t *testing.T) {
 		t.Error("Error while adding ticket entry to testticket")
 	}
 
+	// Test combine Tickets
+	var testTicketCombine1, errc1 = storageHandler.CreateTicket("TestCombine1", "TestText", "TestMail", "TestNameC1")
+	var testTicketCombine2, errc2 = storageHandler.CreateTicket("TestCombine2", "TestText", "TestMail", "TestNameC2")
+	if errc1 != nil && errc2 != nil {
+		t.Error("TestCombineTicketsCouldNotBeCreated")
+	}
+	testTicketCombine1.SetTicketStateInProgress("Processor")
+	testTicketCombine2.SetTicketStateInProgress("Processor")
+
+	storageHandler.CombineTickets(testTicketCombine1.ID, testTicketCombine2.ID)
+
 }
 
 /* ************************************
