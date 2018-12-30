@@ -16,20 +16,6 @@ type StorageHandler struct {
 	ticketStoreDir string
 }
 
-// The StorageWrapper Interface for the ticket application
-type StorageWrapper interface {
-	GetAvailableUsers() *[]User
-	GetUserByUserName(userName string) User
-	GetMailsToSend() []Email
-	SetSendedMails(sendedMails []Email) bool
-	GetTicketByID(id string) (Ticket, error)
-	CreateTicket(subject string, text string, email string, name string) (Ticket, error)
-	GetOpenTickets() *[]Ticket
-	GetTickets() *[]Ticket
-	VerifyUser(userName string, userPassword string) bool
-	GetInProgressTicketsByProcessor(processor string) *[]Ticket
-}
-
 // New loads the storage into ROM and return a new StorageHandler Object
 func New(argUserStoreFile string, argTicketStoreDir string) *StorageHandler {
 	var handler StorageHandler

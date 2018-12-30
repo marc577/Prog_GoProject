@@ -202,10 +202,24 @@ func (af AuthenticatorFunc) Authenticate(user, password string) bool {
 // parameters, registers the urls and sets the Authenticator
 // function to the VerifyUser function
 // from the storagehandler packet
-func Start(port int, serverCertPath string, serverKeyPath string, rootPath string, st storagehandler.StorageWrapper) error {
+func Start(port int, serverCertPath string, serverKeyPath string, rootPath string, st *storagehandler.StorageHandler) error {
 
 	htmlRoot := rootPath
 	defaultOpenT := template.New("").Funcs(map[string]interface{}{
+		"getUser": func() string { return "" },
+		"getHoliday": func(user string) bool {
+			us := st.GetUserByUserName(user)
+			return us.HasHoliday
+		},
+	})
+	defaultAssT := template.New("").Funcs(map[string]interface{}{
+		"getUser": func() string { return "" },
+		"getHoliday": func(user string) bool {
+			us := st.GetUserByUserName(user)
+			return us.HasHoliday
+		},
+	})
+	defaultAllT := template.New("").Funcs(map[string]interface{}{
 		"getUser": func() string { return "" },
 		"getHoliday": func(user string) bool {
 			us := st.GetUserByUserName(user)
@@ -239,8 +253,8 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 
 	tmpls["index"] = template.Must(template.ParseFiles(rootPath+"/new.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["open"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/orow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["assigned"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
-	tmpls["all"] = template.Must(defaultOpenT.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["assigned"] = template.Must(defaultAssT.ParseFiles(rootPath+"/arow.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
+	tmpls["all"] = template.Must(defaultAllT.ParseFiles(rootPath+"/row.tmpl.html", rootPath+"/dashboard.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["added"] = template.Must(template.ParseFiles(rootPath+"/added.tmpl.html", rootPath+"/index.tmpl.html"))
 	tmpls["edit"] = template.Must(defaultEditT.ParseFiles(rootPath+"/ticket.tmpl.html", rootPath+"/index.tmpl.html"))
 
@@ -337,7 +351,16 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	}), mustParamsWrapper("ticket"), basicAuthWrapper(auth), methodsWrapper("GET")))
 
 	http.Handle("/edit/combine", adapt(nil, functionCtxWrapper(func(w http.ResponseWriter, r *http.Request) context.Context {
-		//TODO: combine ticket ticket and ticket toticket and redirect to the new ticket
+		r.ParseForm()
+		ticketid1 := r.Form.Get("ticket")
+		ticketid2 := r.Form.Get("toticket")
+		ti, err := st.CombineTickets(ticketid1, ticketid2)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		} else {
+			url := "https://" + r.Host + "/edit?ticket=" + ti.ID
+			http.Redirect(w, r, url, http.StatusFound)
+		}
 		return nil
 	}), mustParamsWrapper("ticket", "toticket"), basicAuthWrapper(auth), methodsWrapper("POST")))
 
@@ -365,7 +388,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 		var m interface{}
 		err = json.Unmarshal(bodystring, &m)
 
-	}, basicAuthWrapper(auth), methodsWrapper("POST")))
+	}, methodsWrapper("POST")))
 	// mail sending
 	http.Handle("/api/mail", adapt(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
@@ -380,7 +403,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			done := st.SetSendedMails(tickets)
+			done := st.SetSentMails(tickets)
 			if done != true {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
