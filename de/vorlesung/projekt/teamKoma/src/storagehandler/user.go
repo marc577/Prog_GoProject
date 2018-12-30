@@ -69,7 +69,8 @@ func (handler *StorageHandler) GetUserByUserName(userName string) User {
 	return specUser
 }
 
-func (handler *StorageHandler) toggleHoliday(userName string) bool {
+// ToggleHoliday comment
+func (handler *StorageHandler) ToggleHoliday(userName string) bool {
 	var newHolidayState = false
 	var users = handler.GetUsers()
 	for i := 0; i < len(*users); i++ {
