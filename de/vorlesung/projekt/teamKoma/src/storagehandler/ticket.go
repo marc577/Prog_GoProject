@@ -30,9 +30,10 @@ const (
 // TicketItem represents an entry of a ticket
 type TicketItem struct {
 	// TicketItem infos
-	CreationDate time.Time `json:"creationDate"`
-	Creator      string    `json:"creator"`
-	Text         string    `json:"text"`
+	CreationDateString string    `json:"creationDateString"`
+	CreationDate       time.Time `json:"creationDate"`
+	Creator            string    `json:"creator"`
+	Text               string    `json:"text"`
 	// Mail infos
 	IsToSend bool   `json:"isToSend"`
 	IsSended bool   `json:"isSended"`
@@ -42,11 +43,11 @@ type TicketItem struct {
 // Ticket represents a ticket
 type Ticket struct {
 	storageHandler *StorageHandler
-	ID             string                   `json:"id"`
-	Subject        string                   `json:"subject"`
-	TicketState    TicketState              `json:"ticketState"`
-	Processor      string                   `json:"processor"`
-	Items          map[time.Time]TicketItem `json:"items"`
+	ID             string                `json:"id"`
+	Subject        string                `json:"subject"`
+	TicketState    TicketState           `json:"ticketState"`
+	Processor      string                `json:"processor"`
+	Items          map[string]TicketItem `json:"items"`
 	// Name of ticket creator
 	Name string `json:"name"`
 }
@@ -90,7 +91,8 @@ func (ticket Ticket) SetTicketStateClosed() (Ticket, error) {
 // AddEntry2Ticket adds an entry to the given ticket
 func (ticket Ticket) AddEntry2Ticket(creator string, text string, isToSend bool, emailTo string) (Ticket, error) {
 	currTime := time.Now()
-	ticket.Items[currTime] = TicketItem{currTime, creator, text, isToSend, false, emailTo}
+	strDate := string(currTime.Format("2006010215040501"))
+	ticket.Items[strDate] = TicketItem{strDate, currTime, creator, text, isToSend, false, emailTo}
 	return ticket.storageHandler.UpdateTicket(ticket)
 }
 
@@ -176,11 +178,11 @@ func (ticket Ticket) writeTicketToMemory() (Ticket, error) {
 // storeTicket writes a new json-File to the memory with in a ticket
 func storeTicket(storageHandler *StorageHandler, subject string, text string, email string, name string) (Ticket, error) {
 	currentTime := time.Now()
-	//ticketID := string(currentTime.Format("20060102150405")) + "_" + email
+	strDate := string(currentTime.Format("20060102150405"))
 	ticketID := createTicketID(currentTime, email, name)
-	item := TicketItem{currentTime, name, text, false, false, email}
-	mItems := make(map[time.Time]TicketItem)
-	mItems[currentTime] = item
+	item := TicketItem{strDate, currentTime, name, text, false, false, email}
+	mItems := make(map[string]TicketItem)
+	mItems[strDate] = item
 	newTicket := Ticket{storageHandler, ticketID, subject, TSOpen, "", mItems, name}
 	return newTicket.writeTicketToMemory()
 }

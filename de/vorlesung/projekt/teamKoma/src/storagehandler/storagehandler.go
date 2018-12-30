@@ -111,7 +111,7 @@ func (handler *StorageHandler) CombineTickets(id1 string, id2 string) (Ticket, e
 		return Ticket{}, errors.New("The tickets have not the same processor")
 	}
 	for _, item2 := range ticket2.Items {
-		ticket1.Items[item2.CreationDate] = item2
+		ticket1.Items[item2.CreationDateString] = item2
 	}
 	var retTicket, error = handler.UpdateTicket(ticket1)
 	ticket2.storageHandler.deleteTicket(ticket2)
