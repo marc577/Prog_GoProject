@@ -177,6 +177,14 @@ func TestUserFunctions(t *testing.T) {
 		t.Error("User is duplicated")
 	}
 
+	var oldHolidayState = storageHandler.GetUserByUserName(userName).HasHoliday
+	storageHandler.toggleHoliday(userName)
+	var newHolidayState = storageHandler.GetUserByUserName(userName).HasHoliday
+
+	if oldHolidayState == newHolidayState {
+		t.Error("User holiday not toggled correct")
+	}
+
 	if storageHandler.VerifyUser(userName, userPassword) == false {
 		t.Error("User password could not verified")
 	}

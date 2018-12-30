@@ -69,6 +69,22 @@ func (handler *StorageHandler) GetUserByUserName(userName string) User {
 	return specUser
 }
 
+func (handler *StorageHandler) toggleHoliday(userName string) bool {
+	var newHolidayState = false
+	var users = handler.GetUsers()
+	for i := 0; i < len(*users); i++ {
+		if (*users)[i].Name == userName {
+			if (*users)[i].HasHoliday == false {
+				(*users)[i].HasHoliday = true
+				newHolidayState = true
+			} else {
+				(*users)[i].HasHoliday = false
+			}
+		}
+	}
+	return newHolidayState
+}
+
 func (handler *StorageHandler) isUserAvailable(userName string) bool {
 	var isUserAvailable = false
 	var users = handler.GetUsers()
