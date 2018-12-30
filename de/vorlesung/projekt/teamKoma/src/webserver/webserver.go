@@ -5,7 +5,6 @@
 
 // Package webserver provides methods for starting an HTTPS Server
 // for the ticket application
-
 package webserver
 
 import (
@@ -358,12 +357,13 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 	// rest-api
 	// insert ticket via mail
 	http.Handle("/api/new", adapt(func(w http.ResponseWriter, r *http.Request) {
-		_, err := ioutil.ReadAll(r.Body)
-
+		bodystring, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+		var m interface{}
+		err = json.Unmarshal(bodystring, &m)
 
 	}, basicAuthWrapper(auth), methodsWrapper("POST")))
 	// mail sending
