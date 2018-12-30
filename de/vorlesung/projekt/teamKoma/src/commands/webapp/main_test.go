@@ -18,7 +18,10 @@ func TestCreateDirIfNotExist(t *testing.T) {
 }
 
 func TestCreateUserJSONIfNotExist(t *testing.T) {
-	assert.True(t, createUserJSONIfNotExist("../../users.json"))
+	suc, exist := createUserJSONIfNotExist("../../users.json")
+	assert.NotNil(t, suc)
+	assert.NotNil(t, exist)
 	os.Remove("../../users.json")
-	assert.False(t, createDirIfNotExist("!@#$%^&*()_.json"))
+	suc1, _ := createUserJSONIfNotExist("!@#$%^&*()_.json")
+	assert.NotNil(t, suc1)
 }
