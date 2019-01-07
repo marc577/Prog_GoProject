@@ -34,7 +34,7 @@ func verifyEMail(mail string) bool {
 	return re.MatchString(mail)
 }
 
-// methodsWrapper concats different HandlerFuncs
+// methodsWrapper verifies if the rquests has one of the given http method
 func methodsWrapper(methods ...string) adapter {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +176,8 @@ func serveTemplateWrapper(t *template.Template, name string, data interface{}) a
 	}
 }
 
-// adapt adapts several http handlers
+// adapt adapts several http handlers and
+// concats different HandlerFuncs
 // Idea from https://www.youtube.com/watch?v=tIm8UkSf6RA&t=537s
 func adapt(h http.HandlerFunc, adapters ...adapter) http.HandlerFunc {
 	for _, adapter := range adapters {
@@ -325,7 +326,7 @@ func Start(port int, serverCertPath string, serverKeyPath string, rootPath strin
 			if r.Form.Get("type") == "Inform" {
 				isToSend = true
 				if verifyEMail(toMail) != true {
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					http.Error(w, "Keine gültige E-Mail Adresse angegeben!", http.StatusBadRequest)
 					return nil
 				}
 			}
