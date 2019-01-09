@@ -306,7 +306,7 @@ func TestStart(t *testing.T) {
 	for _, url := range urlsGET {
 		client := &http.Client{Transport: transCfg}
 		req, err := http.NewRequest("GET", host+url, nil)
-		req.SetBasicAuth("Werner", "password")
+		req.SetBasicAuth("admin", "admin")
 		res, err := client.Do(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode, url)
@@ -332,10 +332,10 @@ func TestStart(t *testing.T) {
 	// /edit
 	form = url.Values{}
 	form.Add("state", "1")
-	form.Add("processor", "Werner")
+	form.Add("processor", "admin")
 	req, err = http.NewRequest("POST", host+"/edit?ticket="+tID, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	body, err = ioutil.ReadAll(res.Body)
@@ -348,35 +348,35 @@ func TestStart(t *testing.T) {
 	form.Add("email", "a@k")
 	req, err = http.NewRequest("POST", host+"/edit/add?ticket="+tID, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// /edit/free
 	req, err = http.NewRequest("GET", host+"/edit/free?ticket="+tID, nil)
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// /user/holiday
 	req, err = http.NewRequest("POST", host+"/user/holiday", bytes.NewReader(body))
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// /edit/assign
 	req, err = http.NewRequest("GET", host+"/assign?ticket="+tID+"&user=Werner", nil)
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// /edit/mail
 	req, err = http.NewRequest("GET", host+"/api/mail", nil)
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -385,7 +385,7 @@ func TestStart(t *testing.T) {
 
 	// /edit/mail
 	req, err = http.NewRequest("POST", host+"/api/mail", bytes.NewReader(body))
-	req.SetBasicAuth("Werner", "password")
+	req.SetBasicAuth("admin", "admin")
 	res, err = client.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
