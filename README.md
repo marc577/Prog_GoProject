@@ -4,4 +4,4 @@
 [![GoDoc](https://godoc.org/github.com/marc577/Prog_GoProject?status.svg)](https://godoc.org/github.com/marc577/Prog_GoProject) 
 
 
-Programmierung (Neemann) Ticket System in Golang
+just another Ticket System in Golang
